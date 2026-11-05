@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.displayName is string && data.displayName.size() <= 200 &&
+             (!('photoUrl' in data) || data.photoUrl == null || (data.photoUrl is string && data.photoUrl.size() <= 1000));
+    }
+
+    function isValidCampaignReport(data) {
+      return data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.theme is string && data.theme.size() > 0 && data.theme.size() <= 200 &&
+             data.village is string && data.village.size() > 0 && data.village.size() <= 200 &&
+             data.district is string && data.district.size() > 0 && data.district.size() <= 200 &&
+             (!('tehsil' in data) || data.tehsil == null || (data.tehsil is string && data.tehsil.size() <= 200)) &&
+             (!('state' in data) || data.state == null || (data.state is string && data.state.size() <= 200)) &&
+             data.claim is string && data.claim.size() > 0 && data.claim.size() <= 4000 &&
+             data.groundReality is string && data.groundReality.size() > 0 && data.groundReality.size() <= 4000 &&
+             (!('tone' in data) || data.tone == null || (data.tone is string && data.tone.size() <= 100)) &&
+             (!('visualProofSummary' in data) || data.visualProofSummary == null || (data.visualProofSummary is string && data.visualProofSummary.size() <= 3000)) &&
+             (!('suggestedHashtags' in data) || (data.suggestedHashtags is list && data.suggestedHashtags.size() <= 20 && (data.suggestedHashtags.size() == 0 || data.suggestedHashtags[0] is string))) &&
+             (!('alternativeTones' in data) || (data.alternativeTones is list && data.alternativeTones.size() <= 10 && (data.alternativeTones.size() == 0 || data.alternativeTones[0] is string))) &&
+             (!('twitterHindi' in data) || data.twitterHindi == null || (data.twitterHindi is string && data.twitterHindi.size() <= 2000)) &&
+             (!('twitterEnglish' in data) || data.twitterEnglish == null || (data.twitterEnglish is string && data.twitterEnglish.size() <= 2000)) &&
+             (!('instagramHindi' in data) || data.instagramHindi == null || (data.instagramHindi is string && data.instagramHindi.size() <= 5000)) &&
+             (!('instagramEnglish' in data) || data.instagramEnglish == null || (data.instagramEnglish is string && data.instagramEnglish.size() <= 5000)) &&
+             (!('linkedInHindi' in data) || data.linkedInHindi == null || (data.linkedInHindi is string && data.linkedInHindi.size() <= 5000)) &&
+             (!('linkedInEnglish' in data) || data.linkedInEnglish == null || (data.linkedInEnglish is string && data.linkedInEnglish.size() <= 5000)) &&
+             (!('facebookHindi' in data) || data.facebookHindi == null || (data.facebookHindi is string && data.facebookHindi.size() <= 5000)) &&
+             (!('facebookEnglish' in data) || data.facebookEnglish == null || (data.facebookEnglish is string && data.facebookEnglish.size() <= 5000));
+    }
+
+    match /users/{userId} {
+      allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+      allow create: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().createdAt is timestamp &&
+                       incoming().updatedAt is timestamp &&
+                       incoming().createdAt <= request.time &&
+                       incoming().updatedAt <= request.time &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp &&
+                       incoming().updatedAt <= request.time &&
+                       isValidUserProfile(incoming());
+
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+
+      match /reports/{reportId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         incoming().userId == request.auth.uid &&
+                         incoming().createdAt is timestamp &&
+                         incoming().updatedAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         incoming().updatedAt <= request.time &&
+                         isValidCampaignReport(incoming());
+
+        allow update: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp &&
+                         incoming().updatedAt <= request.time &&
+                         isValidCampaignReport(incoming());
+
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+  }
+}

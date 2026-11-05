@@ -1,0 +1,150 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information for authenticated citizen journalists and community reporters",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique Google user ID"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name"
+        },
+        "photoUrl": {
+          "type": "string",
+          "description": "User profile photo URL"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when user profile was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when user profile was last updated"
+        }
+      },
+      "required": ["userId", "email", "displayName", "createdAt", "updatedAt"]
+    },
+    "CampaignReport": {
+      "title": "CampaignReport",
+      "description": "Ground reality report and generated multi-platform social media posts",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique report document ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Author Google user ID"
+        },
+        "theme": {
+          "type": "string",
+          "description": "Campaign theme"
+        },
+        "village": {
+          "type": "string",
+          "description": "Village name"
+        },
+        "tehsil": {
+          "type": "string",
+          "description": "Tehsil or Block"
+        },
+        "district": {
+          "type": "string",
+          "description": "District"
+        },
+        "state": {
+          "type": "string",
+          "description": "State"
+        },
+        "claim": {
+          "type": "string",
+          "description": "Government claim or paper scheme promise"
+        },
+        "groundReality": {
+          "type": "string",
+          "description": "Verified ground reality facts"
+        },
+        "tone": {
+          "type": "string",
+          "description": "Selected journalistic tone"
+        },
+        "visualProofSummary": {
+          "type": "string",
+          "description": "AI analysis summary of visual photo proof"
+        },
+        "suggestedHashtags": {
+          "type": "array",
+          "description": "AI-suggested targeted hashtags"
+        },
+        "alternativeTones": {
+          "type": "array",
+          "description": "AI-suggested alternative tone ideas"
+        },
+        "twitterHindi": {
+          "type": "string",
+          "description": "Generated Twitter / X post in Hindi"
+        },
+        "twitterEnglish": {
+          "type": "string",
+          "description": "Generated Twitter / X post in English"
+        },
+        "instagramHindi": {
+          "type": "string",
+          "description": "Generated Instagram caption in Hindi"
+        },
+        "instagramEnglish": {
+          "type": "string",
+          "description": "Generated Instagram caption in English"
+        },
+        "linkedInHindi": {
+          "type": "string",
+          "description": "Generated LinkedIn post in Hindi"
+        },
+        "linkedInEnglish": {
+          "type": "string",
+          "description": "Generated LinkedIn post in English"
+        },
+        "facebookHindi": {
+          "type": "string",
+          "description": "Generated Facebook post in Hindi"
+        },
+        "facebookEnglish": {
+          "type": "string",
+          "description": "Generated Facebook post in English"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when report was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when report was updated"
+        }
+      },
+      "required": ["userId", "theme", "village", "district", "claim", "groundReality", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "Profile information for authenticated user"
+    },
+    "/users/{userId}/reports/{reportId}": {
+      "schema": { "$ref": "CampaignReport" },
+      "description": "Saved reports and generated social media campaign posts by user"
+    }
+  }
+}
