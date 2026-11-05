@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,15 +44,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.ui.theme.ForestTeal
-import com.example.ui.theme.SafetyOrange
-import com.example.ui.theme.Zinc100
-import com.example.ui.theme.Zinc200
-import com.example.ui.theme.Zinc400
-import com.example.ui.theme.Zinc700
-import com.example.ui.theme.Zinc800
-import com.example.ui.theme.Zinc900
-import com.example.ui.theme.Zinc950
+import com.example.data.model.LanguageMode
+import com.example.ui.theme.AccentCyan
+import com.example.ui.theme.BorderSubtle
+import com.example.ui.theme.CardBackground
+import com.example.ui.theme.MainBackground
+import com.example.ui.theme.PrimaryNavy
+import com.example.ui.theme.PrimaryText
+import com.example.ui.theme.SecondaryBlue
+import com.example.ui.theme.SecondaryText
+import com.example.ui.util.AppStrings
 import com.example.util.ShareUtil
 
 @Composable
@@ -63,6 +65,7 @@ fun VisualQuoteCardDialog(
     proofBitmap: Bitmap?,
     captionText: String,
     eventBadge: String = "",
+    mode: LanguageMode = LanguageMode.HINDI,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -71,7 +74,7 @@ fun VisualQuoteCardDialog(
     val quoteCardBitmap = remember(village, district, claim, reality, proofBitmap, eventBadge) {
         ShareUtil.createVisualQuoteCard(
             context = context,
-            village = village,
+            locationTitle = village,
             district = district,
             claim = claim,
             reality = reality,
@@ -89,8 +92,9 @@ fun VisualQuoteCardDialog(
                 .fillMaxWidth(0.92f)
                 .clip(RoundedCornerShape(20.dp))
                 .testTag("visual_quote_card_dialog"),
-            colors = CardDefaults.cardColors(containerColor = Zinc900),
-            border = BorderStroke(1.dp, Zinc800)
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+            border = BorderStroke(1.dp, BorderSubtle)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -104,15 +108,15 @@ fun VisualQuoteCardDialog(
                 ) {
                     Column {
                         Text(
-                            text = "Visual Evidence Poster (ग्राफिक कार्ड)",
+                            text = AppStrings.visualCardTitle(mode),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = SafetyOrange
+                                color = PrimaryNavy
                             )
                         )
                         Text(
-                            text = "Ready to publish on Instagram Stories, X, WhatsApp",
-                            style = MaterialTheme.typography.bodySmall.copy(color = Zinc400)
+                            text = AppStrings.visualCardSubtitle(mode),
+                            style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText)
                         )
                     }
 
@@ -120,18 +124,19 @@ fun VisualQuoteCardDialog(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close dialog",
-                            tint = Zinc400
+                            tint = SecondaryText
                         )
                     }
                 }
 
-                // Card Preview
+                // Card Preview Frame
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(380.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Zinc950),
+                        .background(MainBackground)
+                        .border(1.dp, BorderSubtle, RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
@@ -156,16 +161,21 @@ fun VisualQuoteCardDialog(
                             .height(46.dp)
                             .testTag("download_card_button"),
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, Zinc700)
+                        border = BorderStroke(1.dp, BorderSubtle)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = null,
                             modifier = Modifier.size(17.dp),
-                            tint = Zinc200
+                            tint = PrimaryNavy
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Save to Gallery", fontSize = 13.sp, color = Zinc200, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = AppStrings.saveToGallery(mode),
+                            fontSize = 13.sp,
+                            color = PrimaryNavy,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
 
                     Button(
@@ -174,11 +184,11 @@ fun VisualQuoteCardDialog(
                                 context = context,
                                 bitmap = quoteCardBitmap,
                                 captionText = captionText,
-                                title = "Share Visual Evidence Poster"
+                                title = AppStrings.shareGraphic(mode)
                             )
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = ForestTeal,
+                            containerColor = PrimaryNavy,
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(12.dp),
@@ -190,10 +200,15 @@ fun VisualQuoteCardDialog(
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = null,
-                            modifier = Modifier.size(17.dp)
+                            modifier = Modifier.size(17.dp),
+                            tint = AccentCyan
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Share Graphic", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = AppStrings.shareGraphic(mode),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }

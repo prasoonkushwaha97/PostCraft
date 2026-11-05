@@ -6,6 +6,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,16 +29,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -71,27 +70,33 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.R
 import com.example.data.model.CampaignTheme
 import com.example.data.model.EventType
+import com.example.data.model.IssueScope
+import com.example.data.model.LanguageMode
 import com.example.data.model.ReportTone
-import com.example.ui.theme.ClaimBlue
-import com.example.ui.theme.ForestTeal
-import com.example.ui.theme.RealityRed
-import com.example.ui.theme.SafetyOrange
-import com.example.ui.theme.SafetyOrangeDark
-import com.example.ui.theme.Zinc100
-import com.example.ui.theme.Zinc200
-import com.example.ui.theme.Zinc300
-import com.example.ui.theme.Zinc400
-import com.example.ui.theme.Zinc600
-import com.example.ui.theme.Zinc700
-import com.example.ui.theme.Zinc800
-import com.example.ui.theme.Zinc900
-import com.example.ui.theme.Zinc950
+import com.example.ui.theme.AccentCyan
+import com.example.ui.theme.BorderActive
+import com.example.ui.theme.BorderHover
+import com.example.ui.theme.BorderSubtle
+import com.example.ui.theme.CardBackground
+import com.example.ui.theme.CardBackgroundMuted
+import com.example.ui.theme.ErrorRed
+import com.example.ui.theme.ErrorRedSubtle
+import com.example.ui.theme.PlaceholderText
+import com.example.ui.theme.PrimaryNavy
+import com.example.ui.theme.PrimaryText
+import com.example.ui.theme.SecondaryBlue
+import com.example.ui.theme.SecondaryText
+import com.example.ui.theme.SuccessGreen
+import com.example.ui.theme.SuccessGreenSubtle
+import com.example.ui.util.AppStrings
 import com.example.ui.viewmodel.GenerationUiState
 import com.example.ui.viewmodel.ReportFormState
 import com.example.ui.viewmodel.SearchGroundingUiState
@@ -102,25 +107,31 @@ fun ReportFormPane(
     formState: ReportFormState,
     generationState: GenerationUiState,
     searchGroundingState: SearchGroundingUiState = SearchGroundingUiState.Idle,
+    activeLanguage: LanguageMode = LanguageMode.HINDI,
+    onScopeChanged: (IssueScope) -> Unit = {},
     onThemeChanged: (CampaignTheme) -> Unit,
-    onVillageChanged: (String) -> Unit,
-    onTehsilChanged: (String) -> Unit,
+    onLocalUnitChanged: (String) -> Unit,
+    onSubDistrictChanged: (String) -> Unit,
     onDistrictChanged: (String) -> Unit,
-    onStateChanged: (String) -> Unit,
+    onStateRegionChanged: (String) -> Unit,
     onClaimChanged: (String) -> Unit,
     onRealityChanged: (String) -> Unit,
     onToneChanged: (ReportTone) -> Unit,
-    onEventTypeChanged: (EventType) -> Unit = {},
-    onEventTitleChanged: (String) -> Unit = {},
-    onEventDateChanged: (String) -> Unit = {},
-    onEventVenueChanged: (String) -> Unit = {},
-    onEventIsUpcomingChanged: (Boolean) -> Unit = {},
+    onEventTypeChanged: (EventType) -> Unit,
+    onEventTitleChanged: (String) -> Unit,
+    onEventDateChanged: (String) -> Unit,
+    onEventVenueChanged: (String) -> Unit,
+    onEventIsUpcomingChanged: (Boolean) -> Unit,
     onVerifySchemeClicked: () -> Unit = {},
     onPhotoSelected: (Uri?) -> Unit,
     onRemovePhoto: () -> Unit,
     onOpenCameraClicked: () -> Unit,
     onLoadPreset: (Int) -> Unit,
     onGenerateClicked: () -> Unit,
+    // Deprecated compatibility parameters
+    onVillageChanged: (String) -> Unit = onLocalUnitChanged,
+    onTehsilChanged: (String) -> Unit = onSubDistrictChanged,
+    onStateChanged: (String) -> Unit = onStateRegionChanged,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -135,41 +146,41 @@ fun ReportFormPane(
 
     val scrollState = rememberScrollState()
 
-    // Consistent input text field colors avoiding cut-through notch issue
+    // Newsroom standard text field styling
     val customTextFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = Zinc900.copy(alpha = 0.85f),
-        unfocusedContainerColor = Zinc900.copy(alpha = 0.85f),
-        focusedBorderColor = SafetyOrange,
-        unfocusedBorderColor = Zinc800,
-        focusedTextColor = Zinc100,
-        unfocusedTextColor = Zinc100,
-        focusedPlaceholderColor = Zinc600,
-        unfocusedPlaceholderColor = Zinc600,
-        cursorColor = SafetyOrange
+        focusedContainerColor = CardBackground,
+        unfocusedContainerColor = CardBackgroundMuted,
+        focusedBorderColor = SecondaryBlue,
+        unfocusedBorderColor = BorderSubtle,
+        focusedTextColor = PrimaryText,
+        unfocusedTextColor = PrimaryText,
+        focusedPlaceholderColor = PlaceholderText,
+        unfocusedPlaceholderColor = PlaceholderText,
+        cursorColor = SecondaryBlue
     )
 
     val claimTextFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = Zinc900.copy(alpha = 0.85f),
-        unfocusedContainerColor = Zinc900.copy(alpha = 0.85f),
-        focusedBorderColor = ClaimBlue,
-        unfocusedBorderColor = Zinc800,
-        focusedTextColor = Zinc100,
-        unfocusedTextColor = Zinc100,
-        focusedPlaceholderColor = Zinc600,
-        unfocusedPlaceholderColor = Zinc600,
-        cursorColor = ClaimBlue
+        focusedContainerColor = CardBackground,
+        unfocusedContainerColor = CardBackgroundMuted,
+        focusedBorderColor = SecondaryBlue,
+        unfocusedBorderColor = BorderSubtle,
+        focusedTextColor = PrimaryText,
+        unfocusedTextColor = PrimaryText,
+        focusedPlaceholderColor = PlaceholderText,
+        unfocusedPlaceholderColor = PlaceholderText,
+        cursorColor = SecondaryBlue
     )
 
     val realityTextFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = Zinc900.copy(alpha = 0.85f),
-        unfocusedContainerColor = Zinc900.copy(alpha = 0.85f),
-        focusedBorderColor = RealityRed,
-        unfocusedBorderColor = Zinc800,
-        focusedTextColor = Zinc100,
-        unfocusedTextColor = Zinc100,
-        focusedPlaceholderColor = Zinc600,
-        unfocusedPlaceholderColor = Zinc600,
-        cursorColor = RealityRed
+        focusedContainerColor = CardBackground,
+        unfocusedContainerColor = CardBackgroundMuted,
+        focusedBorderColor = ErrorRed,
+        unfocusedBorderColor = BorderSubtle,
+        focusedTextColor = PrimaryText,
+        unfocusedTextColor = PrimaryText,
+        focusedPlaceholderColor = PlaceholderText,
+        unfocusedPlaceholderColor = PlaceholderText,
+        cursorColor = ErrorRed
     )
 
     Column(
@@ -182,21 +193,21 @@ fun ReportFormPane(
         // Section Header with Quick Presets
         Column {
             Text(
-                text = "Field Intake & Ground Reality",
+                text = AppStrings.intakeTitle(activeLanguage),
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
-                    color = SafetyOrange
+                    color = PrimaryNavy
                 )
             )
             Text(
-                text = "Log official promises vs verified grassroots reality to auto-generate platform-tailored posts.",
-                style = MaterialTheme.typography.bodySmall.copy(color = Zinc400),
+                text = AppStrings.intakeSubtitle(activeLanguage),
+                style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText),
                 modifier = Modifier.padding(top = 2.dp)
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Quick Preset Chips with high contrast
+            // Quick Preset Chips Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -205,18 +216,18 @@ fun ReportFormPane(
                     imageVector = Icons.Default.FlashOn,
                     contentDescription = null,
                     modifier = Modifier.size(15.dp),
-                    tint = SafetyOrange
+                    tint = SecondaryBlue
                 )
                 Text(
-                    text = "Quick Presets:",
+                    text = AppStrings.quickPresets(activeLanguage),
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = Zinc400,
+                        color = SecondaryText,
                         fontWeight = FontWeight.SemiBold
                     )
                 )
             }
 
-            // Quick Preset Pills (bg-zinc-900 border border-zinc-700/80 text-zinc-200 text-xs px-3 py-1.5 rounded-full)
+            // Quick Preset Pills (Diverse categories: Urban, Rural, Governance, Healthcare)
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -225,82 +236,81 @@ fun ReportFormPane(
                 Surface(
                     onClick = { onLoadPreset(0) },
                     shape = RoundedCornerShape(50),
-                    color = Zinc900,
-                    border = BorderStroke(1.dp, Zinc700.copy(alpha = 0.85f)),
-                    modifier = Modifier.testTag("preset_jal_jeevan")
+                    color = CardBackgroundMuted,
+                    border = BorderStroke(1.dp, BorderSubtle),
+                    modifier = Modifier.testTag("preset_urban_civic")
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text("🚰", fontSize = 12.sp)
-                        Text(
-                            text = "Chhamrachh (Jal Jeevan)",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Zinc200
-                        )
-                    }
+                    Text(
+                        text = AppStrings.presetUrbanCivic(activeLanguage),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = PrimaryText,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
                 }
 
                 Surface(
                     onClick = { onLoadPreset(1) },
                     shape = RoundedCornerShape(50),
-                    color = Zinc900,
-                    border = BorderStroke(1.dp, Zinc700.copy(alpha = 0.85f)),
-                    modifier = Modifier.testTag("preset_road")
+                    color = CardBackgroundMuted,
+                    border = BorderStroke(1.dp, BorderSubtle),
+                    modifier = Modifier.testTag("preset_rural_water")
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text("🛣️", fontSize = 12.sp)
-                        Text(
-                            text = "Bargawan (PMGSY Road)",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Zinc200
-                        )
-                    }
+                    Text(
+                        text = AppStrings.presetRuralWater(activeLanguage),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = PrimaryText,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
                 }
 
                 Surface(
                     onClick = { onLoadPreset(2) },
                     shape = RoundedCornerShape(50),
-                    color = Zinc900,
-                    border = BorderStroke(1.dp, Zinc700.copy(alpha = 0.85f)),
-                    modifier = Modifier.testTag("preset_school")
+                    color = CardBackgroundMuted,
+                    border = BorderStroke(1.dp, BorderSubtle),
+                    modifier = Modifier.testTag("preset_governance")
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text("🏫", fontSize = 12.sp)
-                        Text(
-                            text = "Katai (Primary School)",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Zinc200
-                        )
-                    }
+                    Text(
+                        text = AppStrings.presetRoad(activeLanguage),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = PrimaryText,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+
+                Surface(
+                    onClick = { onLoadPreset(3) },
+                    shape = RoundedCornerShape(50),
+                    color = CardBackgroundMuted,
+                    border = BorderStroke(1.dp, BorderSubtle),
+                    modifier = Modifier.testTag("preset_hospital")
+                ) {
+                    Text(
+                        text = AppStrings.presetGovernance(activeLanguage),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = PrimaryText,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
                 }
             }
         }
 
-        // 1. Campaign Theme Dropdown Card
+        // 1. Issue Category Dropdown Card (Urban, Rural, Policy, Education, Legal)
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Zinc900),
-            border = BorderStroke(1.dp, Zinc800)
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            border = BorderStroke(1.dp, BorderSubtle)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Campaign Theme (अभियान का विषय)",
+                    text = AppStrings.campaignThemeLabel(activeLanguage),
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = Zinc400,
+                        color = SecondaryText,
                         fontWeight = FontWeight.Medium
                     ),
                     modifier = Modifier.padding(bottom = 6.dp)
@@ -310,8 +320,8 @@ fun ReportFormPane(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Zinc950)
-                        .border(1.dp, Zinc800, RoundedCornerShape(12.dp))
+                        .background(CardBackgroundMuted)
+                        .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
                         .clickable { isThemeDropdownOpen = true }
                         .padding(horizontal = 14.dp, vertical = 12.dp)
                         .testTag("theme_selector_dropdown")
@@ -322,31 +332,36 @@ fun ReportFormPane(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = formState.theme.labelHi,
+                            text = "${formState.theme.icon} ${formState.theme.label(activeLanguage)}",
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = SafetyOrange
+                            color = PrimaryNavy
                         )
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
                             contentDescription = "Expand theme dropdown",
-                            tint = Zinc400
+                            tint = SecondaryText
                         )
                     }
 
                     DropdownMenu(
                         expanded = isThemeDropdownOpen,
                         onDismissRequest = { isThemeDropdownOpen = false },
-                        modifier = Modifier.background(Zinc900)
+                        modifier = Modifier.background(CardBackground)
                     ) {
                         CampaignTheme.entries.forEach { theme ->
                             DropdownMenuItem(
                                 text = {
-                                    Column {
-                                        Text(text = theme.labelHi, fontWeight = FontWeight.SemiBold, color = Zinc100)
+                                    Column(modifier = Modifier.padding(vertical = 2.dp)) {
                                         Text(
-                                            text = theme.labelEn,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Zinc400
+                                            text = "${theme.icon} ${theme.label(activeLanguage)}",
+                                            fontWeight = if (formState.theme == theme) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (formState.theme == theme) PrimaryNavy else PrimaryText,
+                                            fontSize = 13.sp
+                                        )
+                                        Text(
+                                            text = theme.desc(activeLanguage),
+                                            style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText),
+                                            fontSize = 11.sp
                                         )
                                     }
                                 },
@@ -361,51 +376,108 @@ fun ReportFormPane(
             }
         }
 
-        // 2. Village / Administrative Coordinates (Clean 2-Column Grid)
+        // 2. Geographic Issue Scope Selector Card
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Zinc900),
-            border = BorderStroke(1.dp, Zinc800)
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            border = BorderStroke(1.dp, BorderSubtle)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
                     Icon(
-                        imageVector = Icons.Default.LocationOn,
+                        imageVector = Icons.Default.Public,
                         contentDescription = null,
-                        tint = SafetyOrange,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp),
+                        tint = SecondaryBlue
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Administrative Coordinates (स्थान विवरण)",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Zinc100
+                        text = AppStrings.issueScopeLabel(activeLanguage),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = SecondaryText,
+                            fontWeight = FontWeight.Medium
                         )
                     )
                 }
 
-                // Row 1: Village & Tehsil
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IssueScope.entries.forEach { scope ->
+                        val isSelected = formState.scope == scope
+                        Surface(
+                            onClick = { onScopeChanged(scope) },
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) PrimaryNavy else CardBackgroundMuted,
+                            border = BorderStroke(1.dp, if (isSelected) PrimaryNavy else BorderSubtle),
+                            modifier = Modifier.testTag("scope_chip_${scope.name.lowercase()}")
+                        ) {
+                            Text(
+                                text = scope.label(activeLanguage),
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color.White else SecondaryText,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Administrative Coordinates (Clean 2-Column Grid with Scope-Specific Labels)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            border = BorderStroke(1.dp, BorderSubtle)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = SecondaryBlue
+                    )
+                    Text(
+                        text = AppStrings.adminCoordsTitle(activeLanguage),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = SecondaryText,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
+
+                // Row 1: Local Unit & Sub-District
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Village / गांव",
+                            text = AppStrings.localUnitLabel(formState.scope, activeLanguage),
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = Zinc400,
+                                color = PrimaryText,
                                 fontWeight = FontWeight.Medium
                             ),
                             modifier = Modifier.padding(bottom = 6.dp)
                         )
                         OutlinedTextField(
-                            value = formState.village,
-                            onValueChange = onVillageChanged,
-                            placeholder = { Text("Chhamrachh / छमरछ") },
+                            value = formState.localUnit,
+                            onValueChange = onLocalUnitChanged,
+                            placeholder = { Text(AppStrings.localUnitPlaceholder(formState.scope, activeLanguage)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("input_village"),
@@ -417,17 +489,17 @@ fun ReportFormPane(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Tehsil / ब्लॉक",
+                            text = AppStrings.subDistrictLabel(formState.scope, activeLanguage),
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = Zinc400,
+                                color = PrimaryText,
                                 fontWeight = FontWeight.Medium
                             ),
                             modifier = Modifier.padding(bottom = 6.dp)
                         )
                         OutlinedTextField(
-                            value = formState.tehsil,
-                            onValueChange = onTehsilChanged,
-                            placeholder = { Text("Sarai / सरई") },
+                            value = formState.subDistrict,
+                            onValueChange = onSubDistrictChanged,
+                            placeholder = { Text(AppStrings.subDistrictPlaceholder(formState.scope, activeLanguage)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("input_tehsil"),
@@ -438,16 +510,16 @@ fun ReportFormPane(
                     }
                 }
 
-                // Row 2: District & State
+                // Row 2: District & State/Region
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "District / ज़िला",
+                            text = AppStrings.districtLabel(formState.scope, activeLanguage),
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = Zinc400,
+                                color = PrimaryText,
                                 fontWeight = FontWeight.Medium
                             ),
                             modifier = Modifier.padding(bottom = 6.dp)
@@ -455,7 +527,7 @@ fun ReportFormPane(
                         OutlinedTextField(
                             value = formState.district,
                             onValueChange = onDistrictChanged,
-                            placeholder = { Text("Singrauli / सिंगरौली") },
+                            placeholder = { Text(AppStrings.districtPlaceholder(formState.scope, activeLanguage)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("input_district"),
@@ -467,17 +539,17 @@ fun ReportFormPane(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "State / राज्य",
+                            text = AppStrings.stateLabel(formState.scope, activeLanguage),
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = Zinc400,
+                                color = PrimaryText,
                                 fontWeight = FontWeight.Medium
                             ),
                             modifier = Modifier.padding(bottom = 6.dp)
                         )
                         OutlinedTextField(
-                            value = formState.state,
-                            onValueChange = onStateChanged,
-                            placeholder = { Text("Madhya Pradesh") },
+                            value = formState.stateRegion,
+                            onValueChange = onStateRegionChanged,
+                            placeholder = { Text(AppStrings.statePlaceholder(formState.scope, activeLanguage)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("input_state"),
@@ -490,17 +562,18 @@ fun ReportFormPane(
             }
         }
 
-        // 3. Official Claim vs Ground Reality (Clean inputs without broken fieldset notch)
+        // 4. Official Claim vs Ground Reality
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Zinc900),
-            border = BorderStroke(1.dp, Zinc800)
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            border = BorderStroke(1.dp, BorderSubtle)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Official Claim Section
+                // Official Promise / Claim Section
                 Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -509,7 +582,7 @@ fun ReportFormPane(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = ClaimBlue
+                            color = SecondaryBlue
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -523,7 +596,7 @@ fun ReportFormPane(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "सरकारी दावा (Official Claim / Paper Scheme)",
+                                    text = AppStrings.claimBadge(activeLanguage),
                                     fontSize = 11.sp,
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold
@@ -535,7 +608,7 @@ fun ReportFormPane(
                     OutlinedTextField(
                         value = formState.claim,
                         onValueChange = onClaimChanged,
-                        placeholder = { Text("योजना या प्रशासन का क्या दावा है? (जैसे नल से 100% जल आपूर्ति)") },
+                        placeholder = { Text(AppStrings.claimPlaceholder(activeLanguage)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(95.dp)
@@ -554,7 +627,7 @@ fun ReportFormPane(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = RealityRed
+                            color = ErrorRed
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -568,7 +641,7 @@ fun ReportFormPane(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "ज़मीनी हकीकत (Ground Reality Fact)",
+                                    text = AppStrings.realityBadge(activeLanguage),
                                     fontSize = 11.sp,
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold
@@ -580,7 +653,7 @@ fun ReportFormPane(
                     OutlinedTextField(
                         value = formState.groundReality,
                         onValueChange = onRealityChanged,
-                        placeholder = { Text("धरातल पर वास्तविक स्थिति क्या है? (जैसे नल सूखे हैं, pipeline टूटी है, पानी नहीं आ रहा)") },
+                        placeholder = { Text(AppStrings.realityPlaceholder(activeLanguage)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(110.dp)
@@ -592,13 +665,13 @@ fun ReportFormPane(
 
                 // Google Search Grounding Trigger Button
                 val isSearching = searchGroundingState is SearchGroundingUiState.Loading
-                OutlinedButton(
+                Button(
                     onClick = onVerifySchemeClicked,
                     enabled = !isSearching && formState.claim.isNotBlank(),
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, ForestTeal),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = ForestTeal
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SecondaryBlue,
+                        contentColor = Color.White
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -607,23 +680,27 @@ fun ReportFormPane(
                     if (isSearching) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            color = ForestTeal,
+                            color = Color.White,
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Verifying via Google Search...", fontSize = 12.sp, color = ForestTeal)
+                        Text(
+                            text = AppStrings.verifyingSchemeSearch(activeLanguage),
+                            fontSize = 12.sp,
+                            color = Color.White
+                        )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
-                            tint = ForestTeal
+                            tint = AccentCyan
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Verify Official Scheme via Google Search",
+                            text = AppStrings.verifySchemeSearch(activeLanguage),
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
@@ -633,8 +710,8 @@ fun ReportFormPane(
                     val searchResult = searchGroundingState as SearchGroundingUiState.Success
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = Zinc950,
-                        border = BorderStroke(1.dp, ForestTeal.copy(alpha = 0.4f)),
+                        color = SuccessGreenSubtle,
+                        border = BorderStroke(1.dp, SuccessGreen.copy(alpha = 0.5f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -642,15 +719,15 @@ fun ReportFormPane(
                                 Icon(
                                     imageVector = Icons.Default.Check,
                                     contentDescription = null,
-                                    tint = ForestTeal,
+                                    tint = SuccessGreen,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Verified Scheme Facts (Google Grounded)",
+                                    text = AppStrings.verifiedSchemeTitle(activeLanguage),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = ForestTeal
+                                    color = SuccessGreen
                                 )
                             }
 
@@ -658,17 +735,17 @@ fun ReportFormPane(
                             Text(
                                 text = searchResult.factualSummary,
                                 fontSize = 12.sp,
-                                color = Zinc200,
+                                color = PrimaryText,
                                 lineHeight = 16.sp
                             )
 
                             if (searchResult.citations.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Official Web Sources:",
+                                    text = AppStrings.officialSources(activeLanguage),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Zinc400
+                                    color = SecondaryText
                                 )
                                 FlowRow(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -683,26 +760,16 @@ fun ReportFormPane(
                                                 } catch (_: Exception) {}
                                             },
                                             shape = RoundedCornerShape(50),
-                                            color = Zinc900,
-                                            border = BorderStroke(1.dp, Zinc700)
+                                            color = CardBackground,
+                                            border = BorderStroke(1.dp, BorderSubtle)
                                         ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Link,
-                                                    contentDescription = null,
-                                                    tint = ForestTeal,
-                                                    modifier = Modifier.size(12.dp)
-                                                )
-                                                Text(
-                                                    text = citation.title.take(28),
-                                                    fontSize = 10.sp,
-                                                    color = Zinc300
-                                                )
-                                            }
+                                            Text(
+                                                text = citation.title.take(30),
+                                                fontSize = 10.sp,
+                                                color = SecondaryBlue,
+                                                fontWeight = FontWeight.Medium,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                            )
                                         }
                                     }
                                 }
@@ -713,65 +780,60 @@ fun ReportFormPane(
             }
         }
 
-        // 4. Event Related to Post (संबंधित आयोजन / अवसर)
+        // 5. Related Civic Event (Jan Sunwai, Ward Sabha, Press Conference)
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Zinc900),
-            border = BorderStroke(1.dp, Zinc800)
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            border = BorderStroke(1.dp, BorderSubtle)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Event,
                         contentDescription = null,
-                        tint = SafetyOrange,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp),
+                        tint = SecondaryBlue
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Related Event / Occasion (संबंधित आयोजन)",
+                        text = AppStrings.eventSectionTitle(activeLanguage),
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = Zinc100
+                            color = PrimaryNavy
                         )
                     )
                 }
 
                 Text(
-                    text = "Associate a Gram Sabha, Jan Sunwai, or official meeting to mobilize citizens and demand direct accountability.",
-                    style = MaterialTheme.typography.bodySmall.copy(color = Zinc400)
+                    text = AppStrings.eventSectionSubtitle(activeLanguage),
+                    style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText)
                 )
 
                 // Event Type Chips
-                Text(
-                    text = "Event Type (आयोजन का प्रकार):",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = Zinc400,
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     EventType.entries.forEach { type ->
                         val isSelected = formState.eventDetails.eventType == type
                         Surface(
                             onClick = { onEventTypeChanged(type) },
                             shape = RoundedCornerShape(50),
-                            color = if (isSelected) SafetyOrangeDark else Zinc950,
-                            border = BorderStroke(1.dp, if (isSelected) SafetyOrange else Zinc800),
+                            color = if (isSelected) PrimaryNavy else CardBackgroundMuted,
+                            border = BorderStroke(1.dp, if (isSelected) PrimaryNavy else BorderSubtle),
                             modifier = Modifier.testTag("event_type_chip_${type.name.lowercase()}")
                         ) {
                             Text(
-                                text = type.labelHi,
+                                text = type.label(activeLanguage),
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else Zinc300,
+                                color = if (isSelected) Color.White else SecondaryText,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             )
                         }
@@ -782,9 +844,9 @@ fun ReportFormPane(
                 if (formState.eventDetails.eventType != EventType.NONE) {
                     Column {
                         Text(
-                            text = "Event Title (आयोजन का शीर्षक / विषय)",
+                            text = AppStrings.eventTitleLabel(activeLanguage),
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = Zinc400,
+                                color = PrimaryText,
                                 fontWeight = FontWeight.Medium
                             ),
                             modifier = Modifier.padding(bottom = 6.dp)
@@ -792,7 +854,7 @@ fun ReportFormPane(
                         OutlinedTextField(
                             value = formState.eventDetails.title,
                             onValueChange = onEventTitleChanged,
-                            placeholder = { Text("जैसे: कलेक्टर जनसुनवाई या विशेष ग्राम सभा बैठक") },
+                            placeholder = { Text(AppStrings.eventTitlePlaceholder(activeLanguage)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("input_event_title"),
@@ -809,9 +871,9 @@ fun ReportFormPane(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Date & Time (दिनांक व समय)",
+                                text = AppStrings.eventDateLabel(activeLanguage),
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Zinc400,
+                                    color = PrimaryText,
                                     fontWeight = FontWeight.Medium
                                 ),
                                 modifier = Modifier.padding(bottom = 6.dp)
@@ -819,7 +881,7 @@ fun ReportFormPane(
                             OutlinedTextField(
                                 value = formState.eventDetails.date,
                                 onValueChange = onEventDateChanged,
-                                placeholder = { Text("मंगलवार 11:00 AM") },
+                                placeholder = { Text(AppStrings.eventDatePlaceholder(activeLanguage)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("input_event_date"),
@@ -831,9 +893,9 @@ fun ReportFormPane(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Venue (स्थान / सभागार)",
+                                text = AppStrings.eventVenueLabel(activeLanguage),
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Zinc400,
+                                    color = PrimaryText,
                                     fontWeight = FontWeight.Medium
                                 ),
                                 modifier = Modifier.padding(bottom = 6.dp)
@@ -841,7 +903,7 @@ fun ReportFormPane(
                             OutlinedTextField(
                                 value = formState.eventDetails.venue,
                                 onValueChange = onEventVenueChanged,
-                                placeholder = { Text("कलेक्ट्रेट / पंचायत भवन") },
+                                placeholder = { Text(AppStrings.eventVenuePlaceholder(activeLanguage)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("input_event_venue"),
@@ -860,15 +922,16 @@ fun ReportFormPane(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = if (formState.eventDetails.isUpcoming) "Upcoming Event (आगामी आयोजन)" else "Past Event (बीता आयोजन / निरीक्षण)",
+                                text = if (formState.eventDetails.isUpcoming) AppStrings.upcomingEvent(activeLanguage) else AppStrings.pastEvent(activeLanguage),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Zinc100
+                                    color = PrimaryText
                                 )
                             )
                             Text(
-                                text = if (formState.eventDetails.isUpcoming) "Posts will urge villagers to attend & demand accountability." else "Posts will summarize inspection facts & demands raised.",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Zinc400)
+                                text = if (formState.eventDetails.isUpcoming) AppStrings.upcomingEventDesc(activeLanguage) else AppStrings.pastEventDesc(activeLanguage),
+                                style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText),
+                                fontSize = 11.sp
                             )
                         }
 
@@ -877,109 +940,123 @@ fun ReportFormPane(
                             onCheckedChange = onEventIsUpcomingChanged,
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
-                                checkedTrackColor = SafetyOrange,
-                                uncheckedThumbColor = Zinc400,
-                                uncheckedTrackColor = Zinc800
-                            ),
-                            modifier = Modifier.testTag("switch_event_upcoming")
+                                checkedTrackColor = SecondaryBlue,
+                                uncheckedThumbColor = SecondaryText,
+                                uncheckedTrackColor = BorderSubtle
+                            )
                         )
                     }
                 }
             }
         }
 
-        // 5. Visual Proof Upload (Photo Picker & CameraX)
+        // 6. Visual Proof Section (CameraX and Photo Picker)
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Zinc900),
-            border = BorderStroke(1.dp, Zinc800)
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            border = BorderStroke(1.dp, BorderSubtle)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Visual Proof (तस्वीर / साक्ष्य प्रमाण)",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = Zinc400,
-                        fontWeight = FontWeight.Medium
-                    ),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = AppStrings.visualProofTitle(activeLanguage),
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryNavy
+                        )
+                    )
+
+                    if (formState.photoUri != null) {
+                        IconButton(
+                            onClick = onRemovePhoto,
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove photo",
+                                tint = ErrorRed,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
 
                 if (formState.photoUri != null) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .border(1.dp, Zinc800, RoundedCornerShape(12.dp))
-                        ) {
-                            AsyncImage(
-                                model = formState.photoUri,
-                                contentDescription = "Visual Proof Thumbnail",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.matchParentSize()
-                            )
+                    // Preview captured image
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(CardBackgroundMuted)
+                            .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                    ) {
+                        AsyncImage(
+                            model = formState.photoUri,
+                            contentDescription = "Visual proof preview",
+                            modifier = Modifier.matchParentSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
 
-                            IconButton(
-                                onClick = onRemovePhoto,
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(8.dp)
-                                    .background(Color.Black.copy(alpha = 0.7f), shape = CircleShape)
-                                    .size(32.dp)
-                                    .testTag("remove_photo_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Remove photo",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = onOpenCameraClicked,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PrimaryNavy,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PhotoCamera,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = AccentCyan
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = AppStrings.retakePhoto(activeLanguage),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        OutlinedButton(
+                            onClick = {
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, BorderSubtle)
                         ) {
-                            Button(
-                                onClick = onOpenCameraClicked,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("retake_camera_button"),
-                                colors = ButtonDefaults.buttonColors(containerColor = SafetyOrange),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PhotoCamera,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Retake Photo", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                            }
-
-                            OutlinedButton(
-                                onClick = {
-                                    photoPickerLauncher.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                    )
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("change_gallery_button"),
-                                shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.dp, Zinc700)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PhotoLibrary,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = Zinc200
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Pick Gallery", fontSize = 12.sp, color = Zinc200, fontWeight = FontWeight.Medium)
-                            }
+                            Icon(
+                                imageVector = Icons.Default.PhotoLibrary,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = SecondaryBlue
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = AppStrings.pickGallery(activeLanguage),
+                                fontSize = 12.sp,
+                                color = PrimaryText,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
                 } else {
@@ -994,16 +1071,24 @@ fun ReportFormPane(
                                     .weight(1f)
                                     .height(46.dp)
                                     .testTag("open_camera_button"),
-                                colors = ButtonDefaults.buttonColors(containerColor = SafetyOrange),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = PrimaryNavy,
+                                    contentColor = Color.White
+                                ),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PhotoCamera,
                                     contentDescription = null,
-                                    modifier = Modifier.size(17.dp)
+                                    modifier = Modifier.size(17.dp),
+                                    tint = AccentCyan
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Take Photo", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = AppStrings.takePhoto(activeLanguage),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
 
                             OutlinedButton(
@@ -1017,22 +1102,27 @@ fun ReportFormPane(
                                     .height(46.dp)
                                     .testTag("open_gallery_button"),
                                 shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.dp, Zinc700)
+                                border = BorderStroke(1.dp, BorderSubtle)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PhotoLibrary,
                                     contentDescription = null,
                                     modifier = Modifier.size(17.dp),
-                                    tint = Zinc200
+                                    tint = SecondaryBlue
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Pick Gallery", fontSize = 13.sp, color = Zinc200, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = AppStrings.pickGallery(activeLanguage),
+                                    fontSize = 13.sp,
+                                    color = PrimaryText,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
                         }
 
                         Text(
-                            text = "📸 Capture real ground evidence (broken pipes, potholed roads) for Gemini multimodal proof analysis.",
-                            style = MaterialTheme.typography.bodySmall.copy(color = Zinc400),
+                            text = AppStrings.visualProofDesc(activeLanguage),
+                            style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText),
                             fontSize = 12.sp
                         )
                     }
@@ -1040,17 +1130,18 @@ fun ReportFormPane(
             }
         }
 
-        // 6. Tone Selector
+        // 7. Tone Selector
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Zinc900),
-            border = BorderStroke(1.dp, Zinc800)
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            border = BorderStroke(1.dp, BorderSubtle)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Tone of Report (रिपोर्ट की शैली)",
+                    text = AppStrings.toneLabel(activeLanguage),
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = Zinc400,
+                        color = SecondaryText,
                         fontWeight = FontWeight.Medium
                     ),
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -1065,16 +1156,16 @@ fun ReportFormPane(
                         Surface(
                             onClick = { onToneChanged(tone) },
                             shape = RoundedCornerShape(50),
-                            color = if (isSelected) SafetyOrangeDark else Zinc950,
-                            border = BorderStroke(1.dp, if (isSelected) SafetyOrange else Zinc800),
+                            color = if (isSelected) PrimaryNavy else CardBackgroundMuted,
+                            border = BorderStroke(1.dp, if (isSelected) PrimaryNavy else BorderSubtle),
                             modifier = Modifier.testTag("tone_chip_${tone.name.lowercase()}")
                         ) {
                             Text(
-                                text = tone.labelHi,
-                                fontSize = 12.sp,
+                                text = tone.label(activeLanguage),
+                                fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else Zinc300,
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                color = if (isSelected) Color.White else SecondaryText,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             )
                         }
                     }
@@ -1082,7 +1173,7 @@ fun ReportFormPane(
             }
         }
 
-        // 7. Generate All Posts Action Button
+        // Primary Action: Generate Multi-Platform Posts
         val isLoading = generationState is GenerationUiState.Loading
 
         Button(
@@ -1093,7 +1184,7 @@ fun ReportFormPane(
                 .height(52.dp)
                 .testTag("generate_posts_button"),
             colors = ButtonDefaults.buttonColors(
-                containerColor = SafetyOrange,
+                containerColor = PrimaryNavy,
                 contentColor = Color.White
             ),
             shape = RoundedCornerShape(14.dp)
@@ -1101,24 +1192,27 @@ fun ReportFormPane(
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(22.dp),
-                    color = Color.White,
+                    color = AccentCyan,
                     strokeWidth = 2.5.dp
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Generating 4 Platform Posts...",
+                    text = AppStrings.generatingPosts(activeLanguage),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
             } else {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    modifier = Modifier.size(19.dp)
+                Image(
+                    painter = painterResource(id = R.drawable.ic_postcraft_speech_p),
+                    contentDescription = "PostCraft",
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                    contentScale = ContentScale.Fit
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Generate Multi-Platform Posts (पोस्ट तैयार करें)",
+                    text = AppStrings.generatePosts(activeLanguage),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -1129,7 +1223,7 @@ fun ReportFormPane(
             val errorMsg = (generationState as? GenerationUiState.Error)?.message.orEmpty()
             Text(
                 text = errorMsg,
-                color = MaterialTheme.colorScheme.error,
+                color = ErrorRed,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 4.dp)
             )

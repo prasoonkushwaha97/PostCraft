@@ -1,6 +1,6 @@
 {
-  "name": "GramAwaz",
-  "description": "Citizen journalism and rural governance social media post generator for community awareness and ground reality reporting.",
+  "name": "PostCraft",
+  "description": "Citizen journalism, public governance, and ground reality social media post and press release generator.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

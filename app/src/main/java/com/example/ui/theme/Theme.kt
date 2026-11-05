@@ -2,48 +2,39 @@ package com.example.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Professional Dark-first Theme with Deep Zinc / Slate (#09090b) and Safety Orange
-private val DarkColorScheme = darkColorScheme(
-    primary = SafetyOrange,
+// ==============================================================================
+// Modern Newsroom Color Scheme
+// Sophisticated Navy Blue (#10243A) + Electric Cyan (#20C5D8) + White (#FFFFFF)
+// ==============================================================================
+private val NewsroomLightColorScheme = lightColorScheme(
+    primary = PrimaryNavy,
     onPrimary = Color.White,
-    primaryContainer = SafetyOrangeDark,
-    onPrimaryContainer = Zinc50,
-    secondary = ForestTeal,
+    primaryContainer = SecondaryBlue,
+    onPrimaryContainer = Color.White,
+    secondary = SecondaryBlue,
     onSecondary = Color.White,
-    secondaryContainer = ForestTealContainer,
-    onSecondaryContainer = Zinc50,
-    background = Zinc950,
-    surface = Zinc900,
-    surfaceVariant = Zinc850,
-    onBackground = Zinc100,
-    onSurface = Zinc100,
-    onSurfaceVariant = Zinc400,
-    outline = Zinc700,
-    outlineVariant = Zinc800
-)
-
-// Clean light scheme (if explicitly toggled, keeping high contrast)
-private val LightColorScheme = darkColorScheme( // We enforce dark-first high-contrast mobile theme for GramAwaz
-    primary = SafetyOrange,
-    onPrimary = Color.White,
-    primaryContainer = SafetyOrangeDark,
-    onPrimaryContainer = Zinc50,
-    secondary = ForestTeal,
-    onSecondary = Color.White,
-    secondaryContainer = ForestTealContainer,
-    onSecondaryContainer = Zinc50,
-    background = Zinc950,
-    surface = Zinc900,
-    surfaceVariant = Zinc850,
-    onBackground = Zinc100,
-    onSurface = Zinc100,
-    onSurfaceVariant = Zinc400,
-    outline = Zinc700,
-    outlineVariant = Zinc800
+    secondaryContainer = AccentCyanSubtle,
+    onSecondaryContainer = PrimaryNavy,
+    tertiary = AccentCyan,
+    onTertiary = PrimaryNavy,
+    tertiaryContainer = AccentCyanSubtle,
+    onTertiaryContainer = PrimaryNavy,
+    background = MainBackground,
+    onBackground = PrimaryText,
+    surface = CardBackground,
+    onSurface = PrimaryText,
+    surfaceVariant = CardBackgroundMuted,
+    onSurfaceVariant = SecondaryText,
+    outline = BorderSubtle,
+    outlineVariant = BorderHover,
+    error = ErrorRed,
+    onError = Color.White,
+    errorContainer = ErrorRedSubtle,
+    onErrorContainer = ErrorRed
 )
 
 @Composable
@@ -52,7 +43,7 @@ fun GramAwazTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = DarkColorScheme,
+        colorScheme = NewsroomLightColorScheme,
         typography = Typography,
         content = content
     )

@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "GramAwaz"
+rootProject.name = "PostCraft"
 
 include(":app")

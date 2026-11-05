@@ -87,9 +87,13 @@ class CampaignReportRepository(private val db: FirebaseFirestore) {
         val payload = mapOf(
             "userId" to uid,
             "theme" to report.theme,
+            "scope" to report.scope,
+            "localUnit" to report.localUnit,
+            "subDistrict" to report.subDistrict,
             "village" to report.village,
             "tehsil" to report.tehsil,
             "district" to report.district,
+            "stateRegion" to report.stateRegion,
             "state" to report.state,
             "claim" to report.claim,
             "groundReality" to report.groundReality,
@@ -97,14 +101,21 @@ class CampaignReportRepository(private val db: FirebaseFirestore) {
             "visualProofSummary" to report.visualProofSummary,
             "suggestedHashtags" to report.suggestedHashtags,
             "alternativeTones" to report.alternativeTones,
+            "eventType" to report.eventType,
+            "eventTitle" to report.eventTitle,
+            "eventDate" to report.eventDate,
+            "eventVenue" to report.eventVenue,
+            "isUpcomingEvent" to report.isUpcomingEvent,
             "twitterHindi" to report.twitterHindi,
             "twitterEnglish" to report.twitterEnglish,
-            "instagramHindi" to report.instagramHindi,
-            "instagramEnglish" to report.instagramEnglish,
+            "instagramFbHindi" to report.instagramFbHindi,
+            "instagramFbEnglish" to report.instagramFbEnglish,
+            "pressReleaseHindi" to report.pressReleaseHindi,
+            "pressReleaseEnglish" to report.pressReleaseEnglish,
             "linkedInHindi" to report.linkedInHindi,
             "linkedInEnglish" to report.linkedInEnglish,
-            "facebookHindi" to report.facebookHindi,
-            "facebookEnglish" to report.facebookEnglish,
+            "status" to report.status,
+            "resolutionNotes" to report.resolutionNotes,
             "createdAt" to FieldValue.serverTimestamp(),
             "updatedAt" to FieldValue.serverTimestamp()
         ).filterValues { it != null }
@@ -116,6 +127,24 @@ class CampaignReportRepository(private val db: FirebaseFirestore) {
             throw e
         } catch (e: Exception) {
             handleFirestoreError(e, OperationType.WRITE, docRef.path)
+            throw e
+        }
+    }
+
+    suspend fun updateReportStatus(reportId: String, status: String, notes: String = "") {
+        val uid = requireUserId()
+        val docRef = db.collection("users").document(uid).collection("reports").document(reportId)
+        val updates = mapOf(
+            "status" to status,
+            "resolutionNotes" to notes,
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+        try {
+            docRef.update(updates).await()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            handleFirestoreError(e, OperationType.UPDATE, docRef.path)
             throw e
         }
     }

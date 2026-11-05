@@ -3,47 +3,49 @@ package com.example.data.generator
 import com.example.data.model.CampaignTheme
 import com.example.data.model.EventDetails
 import com.example.data.model.GeneratedPostBundle
+import com.example.data.model.IssueScope
 import com.example.data.model.ReportTone
 
 object TemplatePostGenerator {
     fun generateOfflineBundle(
         theme: CampaignTheme,
-        village: String,
-        tehsil: String,
+        scope: IssueScope,
+        localUnit: String,
+        subDistrict: String,
         district: String,
-        state: String,
+        stateRegion: String,
         claim: String,
         reality: String,
         tone: ReportTone,
         hasImage: Boolean,
         eventDetails: EventDetails = EventDetails()
     ): GeneratedPostBundle {
-        val loc = listOf(village, tehsil, district, state).filter { it.isNotBlank() }.joinToString(", ")
-        val shortLoc = if (village.isNotBlank()) "$village ($district)" else district.ifBlank { "ग्रामीण क्षेत्र" }
+        val loc = listOf(localUnit, subDistrict, district, stateRegion).filter { it.isNotBlank() }.joinToString(", ")
+        val shortLoc = if (localUnit.isNotBlank()) "$localUnit ($district)" else district.ifBlank { "क्षेत्रीय स्थल" }
 
-        val hashtags = mutableListOf("#GramAwaz", "#CitizenJournalism", "#PanchayatRaj", "#GroundReality")
-        if (claim.contains("Jal", ignoreCase = true) || reality.contains("पानी", ignoreCase = true) || reality.contains("water", ignoreCase = true)) {
-            hashtags.add("#JalJeevanMission")
-        } else if (claim.contains("Road", ignoreCase = true) || reality.contains("सड़क", ignoreCase = true)) {
-            hashtags.add("#PMGSY")
-        } else {
-            hashtags.add("#RuralGovernance")
+        val hashtags = mutableListOf("#PostCraft", "#CitizenJournalism", "#PublicAccountability", "#GroundReality")
+        when (theme) {
+            CampaignTheme.URBAN_CIVIC -> hashtags.addAll(listOf("#UrbanCivic", "#SmartCityReality"))
+            CampaignTheme.RURAL_AGRICULTURE -> hashtags.addAll(listOf("#RuralIndia", "#PanchayatRaj"))
+            CampaignTheme.GOVERNANCE_POLICY -> hashtags.addAll(listOf("#PublicPolicy", "#RTIIndia"))
+            CampaignTheme.EDUCATION_HEALTHCARE -> hashtags.addAll(listOf("#HealthForAll", "#RightToEducation"))
+            CampaignTheme.LEGAL_RIGHTS -> hashtags.addAll(listOf("#CitizenRights", "#RuleOfLaw"))
         }
 
-        val hashtagStr = hashtags.take(4).joinToString(" ")
-        val twitterHashtags = hashtags.take(3).joinToString(" ")
+        val hashtagStr = hashtags.distinct().take(4).joinToString(" ")
+        val twitterHashtags = hashtags.distinct().take(3).joinToString(" ")
 
-        // Twitter (X) strictly under 280 chars
+        // 1. Twitter (X) - strictly under 280 chars
         val twitterEventNoticeHi = if (eventDetails.hasEvent) {
             val evTitle = eventDetails.title.ifBlank { eventDetails.eventType.labelHi }.take(22)
             "\n📅 आयोजन: $evTitle"
         } else ""
 
-        val rawTwitterHi = "📍 $shortLoc | #ज़मीनी_हकीकत\n" +
-                "📋 दावा: ${claim.take(40)}...\n" +
-                "❌ हकीकत: ${reality.take(50)}..." +
+        val rawTwitterHi = "📍 $shortLoc | #ज़मीनी_हक़ीक़त\n" +
+                "📋 दावा: ${claim.take(38)}...\n" +
+                "❌ हक़ीक़त: ${reality.take(48)}..." +
                 twitterEventNoticeHi +
-                "\nसंज्ञान लें: @CollectorSingrauli\n$twitterHashtags"
+                "\nसंज्ञान लें: @CollectorSingrauli @MoHUA_India\n$twitterHashtags"
         val twitterHi = if (rawTwitterHi.length > 275) rawTwitterHi.take(272) + "..." else rawTwitterHi
 
         val twitterEventNoticeEn = if (eventDetails.hasEvent) {
@@ -52,203 +54,161 @@ object TemplatePostGenerator {
         } else ""
 
         val rawTwitterEn = "📍 $shortLoc | #GroundReality\n" +
-                "📋 Claim: ${claim.take(40)}...\n" +
-                "❌ Reality: ${reality.take(50)}..." +
+                "📋 Claim: ${claim.take(38)}...\n" +
+                "❌ Reality: ${reality.take(48)}..." +
                 twitterEventNoticeEn +
-                "\nAction needed: @CollectorSingrauli\n$twitterHashtags"
+                "\nAction needed: @CollectorSingrauli @MoHUA_India\n$twitterHashtags"
         val twitterEn = if (rawTwitterEn.length > 275) rawTwitterEn.take(272) + "..." else rawTwitterEn
 
-        // Instagram Feed
+        // 2. Instagram & Facebook - Storytelling Hook & Public Engagement
         val instaEventSectionHi = if (eventDetails.hasEvent) {
             """
             
-            🗓 संबंधित आयोजन / अवसर:
+            🗓 संबंधित नागरिक आयोजन:
             📌 ${eventDetails.title.ifBlank { eventDetails.eventType.labelHi }}
             ${if (eventDetails.date.isNotBlank()) "⏰ दिनांक व समय: ${eventDetails.date}" else ""}
             ${if (eventDetails.venue.isNotBlank()) "📍 स्थान: ${eventDetails.venue}" else ""}
-            ${if (eventDetails.isUpcoming) "👉 गांववासी इस आयोजन में भारी संख्या में पहुंचें और साक्ष्यों के साथ जवाबदेही तय करें!" else "👉 इस आयोजन में अधिकारियों के समक्ष यह मामला प्रमुखता से दर्ज कराया गया।"}
+            ${if (eventDetails.isUpcoming) "👉 नागरिक इस बैठक में शामिल होकर ठोस साक्ष्यों के साथ जवाबदेही तय करें!" else "👉 इस बैठक में अधिकारियों के समक्ष यह मामला प्रमुखता से दर्ज कराया गया।"}
             """.trimIndent()
         } else ""
 
         val instaEventSectionEn = if (eventDetails.hasEvent) {
             """
             
-            🗓 Related Forum / Event:
+            🗓 Related Public Forum:
             📌 ${eventDetails.title.ifBlank { eventDetails.eventType.labelEn }}
-            ${if (eventDetails.date.isNotBlank()) "⏰ Date & Time: ${eventDetails.date}" else ""}
+            ${if (eventDetails.date.isNotBlank()) "⏰ Schedule: ${eventDetails.date}" else ""}
             ${if (eventDetails.venue.isNotBlank()) "📍 Venue: ${eventDetails.venue}" else ""}
-            ${if (eventDetails.isUpcoming) "👉 Villagers are urged to attend in large numbers and demand accountability with proof!" else "👉 This evidence was formally submitted before officials during this forum."}
+            ${if (eventDetails.isUpcoming) "👉 Citizens are urged to attend and question officials with factual evidence!" else "👉 Ground evidence was formally presented to authorities at this forum."}
             """.trimIndent()
         } else ""
 
-        val instaHi = """
-            📢 ग्राम आवाज़ | साथी फाउंडेशन ग्राउंड रिपोर्ट 🌾
+        val instaFbHi = """
+            📢 पोस्ट क्राफ्ट | जन-मुद्दा ग्राउंड रिपोर्ट 🔍
             
-            स्थान: $loc
-            विषय: ${theme.labelHi}
-            शैली: ${tone.labelHi}
+            📍 स्थान: $loc
+            📂 विषय: ${theme.labelHi}
+            ⚖️ टोन: ${tone.labelHi}
             
-            🔍 सरकारी दावा (कागज़ों में):
+            📋 आधिकारिक दावा / योजना वादा:
             "$claim"
             
-            ⚠️ ज़मीनी हकीकत (धरातल पर):
+            ⚠️ ज़मीनी हक़ीक़त (धरातल पर):
             "$reality"
             $instaEventSectionHi
             
-            ${if (hasImage) "📸 संलग्न तस्वीर ग्राउंड रियलिटी का प्रत्यक्ष प्रमाण है।" else ""}
+            ${if (hasImage) "📸 संलग्न तस्वीर मौके की वास्तविक स्थिति का प्रमाण है।" else ""}
             
-            👉 आवाज़ उठाएं: यदि आपके गांव में भी ऐसा ही हाल है, तो कमेंट में लिखें और अपने स्थानीय प्रतिनिधियों को टैग करें। लोकतंत्र में नागरिक जागरूकता ही समाधान है!
+            💬 अपनी राय दें: क्या आपके वार्ड या इलाके में भी ऐसी ही स्थिति है? नीचे कमेंट में लिखें और स्थानीय जनप्रतिनिधियों व अधिकारियों को टैग करें!
             
-            $hashtagStr #SaathiFoundation #VillageVoice #RuralIndia #Accountability
+            $hashtagStr #PostCraft #CitizenJournalism #VoiceOfPeople #GoodGovernance
         """.trimIndent()
 
-        val instaEn = """
-            📢 GramAwaz | Saathi Foundation Ground Report 🌾
+        val instaFbEn = """
+            📢 PostCraft | Ground Reality Investigation 🔍
             
-            Location: $loc
-            Campaign Theme: ${theme.labelEn}
-            Tone: ${tone.labelEn}
+            📍 Location: $loc
+            📂 Category: ${theme.labelEn}
+            ⚖️ Tone: ${tone.labelEn}
             
-            🔍 Official Claim (On Paper):
+            📋 Official Promise / Scheme Claim:
             "$claim"
             
-            ⚠️ Ground Reality (On the Field):
+            ⚠️ Ground Reality on the Field:
             "$reality"
             $instaEventSectionEn
             
-            ${if (hasImage) "📸 The attached photograph is direct proof of the ground situation." else ""}
+            ${if (hasImage) "📸 The attached photo is photographic proof of the ground situation." else ""}
             
-            👉 Speak Up: If your village faces a similar situation, share your thoughts below and tag your local representatives. Citizen awareness drives real governance reform!
+            💬 Speak Up: Is your locality facing a similar issue? Comment below and tag your local ward councillor, MLA, or administrative officers!
             
-            $hashtagStr #SaathiFoundation #VillageVoice #RuralIndia #CivicAction
+            $hashtagStr #PostCraft #CitizenJournalism #PublicVoice #GoodGovernance #Accountability
         """.trimIndent()
 
-        // LinkedIn
-        val linkedInEventHi = if (eventDetails.hasEvent) {
-            """
+        // 3. Press Release & WhatsApp Media Bulletin (Inverted Pyramid)
+        val pressReleaseHi = """
+            📰 प्रेस विज्ञप्ति | नागरिक पत्रकारिता मंच (पोस्ट क्राफ्ट)
+            तत्काल प्रसारण हेतु जारी
             
-            🏛️ संबंधित नागरिक / प्रशासनिक मंच:
-            • विषय: ${eventDetails.title.ifBlank { eventDetails.eventType.labelHi }}
-            • समय व स्थल: ${eventDetails.date.ifBlank { "नियत तिथि" }} | ${eventDetails.venue.ifBlank { loc }}
-            • लोकतांत्रिक सहभागिता एवं निगरानी के लिए इस मंच पर नागरिक उपस्थिति अनिवार्य है।
-            """.trimIndent()
-        } else ""
-
-        val linkedInEventEn = if (eventDetails.hasEvent) {
-            """
+            शीर्षक: $shortLoc में सरकारी दावों के विपरीत जनता परेशान, $claim की खुली पोल
             
-            🏛️ Related Civic / Administrative Forum:
-            • Platform: ${eventDetails.title.ifBlank { eventDetails.eventType.labelEn }}
-            • Schedule & Venue: ${eventDetails.date.ifBlank { "Scheduled" }} | ${eventDetails.venue.ifBlank { loc }}
-            • Grassroots participation at this forum is pivotal for ensuring transparent social audit.
-            """.trimIndent()
-        } else ""
+            स्थान: $loc
+            
+            $loc: नागरिक पड़ताल में $loc अंतर्गत एक गंभीर जन-मुद्दा सामने आया है। एक तरफ जहां प्रशासनिक स्तर पर "$claim" का दावा किया जा रहा है, वहीं धरातल पर वास्तविकता इसके बिल्कुल उलट है।
+            
+            जांच में पाया गया कि "$reality"। स्थानीय निवासियों का कहना है कि बुनियादी सुविधाओं और वादों की इस अनदेखी से जनजीवन बुरी तरह प्रभावित हो रहा है। ${if (eventDetails.hasEvent) "इस विषय को लेकर ${eventDetails.title.ifBlank { eventDetails.eventType.labelHi }} का आयोजन ${eventDetails.date.ifBlank { "नियत तिथि" }} को ${eventDetails.venue.ifBlank { shortLoc }} में निर्धारित है।" else ""}
+            
+            नागरिकों ने ज़िला प्रशासन व संबंधित विभाग से मांग की है कि तत्काल प्रभाव से निरीक्षण दल भेजकर समस्या का समयबद्ध समाधान किया जाए, अन्यथा स्थानीय स्तर पर व्यापक जन-संवाद आयोजित किया जाएगा।
+            
+            सम्पर्क व स्रोत: पोस्ट क्राफ्ट सिटीजन नेटवर्क | #PostCraft
+        """.trimIndent()
 
+        val pressReleaseEn = """
+            📰 PRESS RELEASE | CITIZEN JOURNALISM DESK (POSTCRAFT)
+            FOR IMMEDIATE RELEASE
+            
+            HEADLINE: Field Audit in $shortLoc Exposes Gaps in Public Delivery; Citizens Demand Urgent Redressal
+            
+            DATELINE: $loc
+            
+            $loc — A comprehensive citizen field audit conducted in $loc has brought forward stark discrepancies between official policy claims and grassroots ground reality. While administrative records promise "$claim", empirical field observations reveal that "$reality".
+            
+            Local residents have expressed deep concern regarding the administrative inertia. ${if (eventDetails.hasEvent) "To demand formal accountability, a ${eventDetails.title.ifBlank { eventDetails.eventType.labelEn }} is convened on ${eventDetails.date.ifBlank { "scheduled date" }} at ${eventDetails.venue.ifBlank { shortLoc }}." else ""}
+            
+            Civil society observers and citizens have formally urged district authorities and department heads to initiate an immediate on-site inspection and publish a time-bound action plan.
+            
+            Media Desk: PostCraft Citizen Network | #PostCraft
+        """.trimIndent()
+
+        // 4. LinkedIn & Public Policy Analysis
         val linkedInHi = """
-            📊 लोकनीति कार्यान्वयन एवं ग्रामीण सुशासन: ज़मीनी पड़ताल
+            📊 लोकनीति कार्यान्वयन एवं प्रशासनिक जवाबदेही: केस स्टडी
             
-            ग्राम: $village | ब्लॉक: $tehsil | ज़िला: $district ($state)
-            पहल: साथी फाउंडेशन - नागरिक पत्रकारिता मंच
+            क्षेत्र: $loc | विषय: ${theme.labelHi}
+            मंच: पोस्ट क्राफ्ट - जन-अधिकार एवं नीतिगत विश्लेषण
             
-            सार्वजनिक नीतियों की सफलता केवल आवंटन में नहीं, बल्कि अंतिम व्यक्ति तक पहुंचने में है।
+            सुशासन का मूल्यांकन बजट आवंटन से नहीं, बल्कि अंतिम पंक्ति के नागरिक तक सेवा की गुणवत्ता पहुँचने से होता है।
             
-            1️⃣ नीतिगत दावा:
+            1️⃣ नीतिगत वादा / प्रशासनिक लक्ष्य:
             $claim
             
-            2️⃣ ज़मीनी क्रियान्वयन की स्थिति:
+            2️⃣ क्रियान्वयन अंतराल (Implementation Gap):
             $reality
-            $linkedInEventHi
             
-            💡 प्रशासनिक अनुशंसाएं:
-            • ग्राम पंचायत स्तर पर नियमित सामाजिक अंकेक्षण (Social Audit) की अनिवार्यता।
-            • शिकायत निवारण तंत्र की समयबद्ध निगरानी।
-            • नागरिकों व प्रशासन के बीच पारदर्शी संवाद।
+            💡 नीतिगत सुधार अनुशंसाएँ:
+            • नागरिक-केंद्रित रियल-टाइम डैशबोर्ड व स्वतंत्र सामाजिक अंकेक्षण (Social Audit)।
+            • शिकायत निवारण हेतु जवाबदेह अधिकारियों की समय-सीमा तय करना।
+            • प्रशासनिक निर्णयों में स्थानीय नागरिकों व विशेषज्ञों की पारदर्शी सहभागिता।
             
-            सुशासन का अर्थ केवल कागजी लक्ष्य नहीं, बल्कि प्रत्येक नागरिक के जीवन में वास्तविक सुधार है।
-            
-            $hashtagStr #PublicPolicy #Governance #RuralDevelopment #India #Transparency
+            $hashtagStr #PublicPolicy #GoodGovernance #UrbanGovernance #RuralDevelopment #Transparency #PostCraft
         """.trimIndent()
 
         val linkedInEn = """
-            📊 Public Policy Implementation & Rural Governance: Field Case Study
+            📊 Public Policy Implementation & Governance Gap: Field Analysis
             
-            Village: $village | Block: $tehsil | District: $district ($state)
-            Initiative: Saathi Foundation - Citizen Journalism & Public Accountability
+            Location: $loc | Domain: ${theme.labelEn}
+            Platform: PostCraft - Citizen Journalism & Policy Accountability
             
-            True governance effectiveness is measured not by budgetary allocations, but by the tangible delivery of services to the grassroots citizen.
+            The efficacy of public administration is defined not by policy announcements or capital allocation, but by verified outcomes at the citizen touchpoint.
             
-            1️⃣ Policy Claim / Government Target:
+            1️⃣ Policy Commitment / Official Benchmark:
             $claim
             
-            2️⃣ Field Reality & Implementation Gap:
+            2️⃣ Ground Level Execution Deficit:
             $reality
-            $linkedInEventEn
             
-            💡 Constructive Recommendations:
-            • Mandatory citizen-led Social Audits at the Gram Panchayat level.
-            • Real-time digital dashboard reflecting verified ground functionality, not just installations.
-            • Time-bound accountability for local administrative officers.
+            💡 Policy Recommendations & Institutional Reforms:
+            • Instituting mandatory citizen-led third-party Social Audits.
+            • Real-time digital monitoring capturing operational status rather than mere completion certificates.
+            • Fixed escalation matrix and time-bound grievance resolution for public grievances.
             
-            Good governance demands bridging the divide between policy vision and grassroots reality.
+            Bridging the delivery deficit requires active civic engagement and transparent administrative scrutiny.
             
-            $hashtagStr #PublicPolicy #GoodGovernance #RuralDevelopment #SocialAudit #GrassrootsAccountability
-        """.trimIndent()
-
-        // Facebook
-        val fbEventHi = if (eventDetails.hasEvent) {
-            """
-            
-            📢 आवश्यक सूचना:
-            इस संबंध में ${eventDetails.title.ifBlank { eventDetails.eventType.labelHi }} का आयोजन ${if (eventDetails.date.isNotBlank()) "तारीख ${eventDetails.date} को " else ""}${if (eventDetails.venue.isNotBlank()) "${eventDetails.venue} में " else ""}${if (eventDetails.isUpcoming) "होने जा रहा है। सभी साथी ज़रूर पहुंचें!" else "हुआ था जिसमें यह आवाज़ उठाई गई।"}
-            """.trimIndent()
-        } else ""
-
-        val fbEventEn = if (eventDetails.hasEvent) {
-            """
-            
-            📢 Community Notice:
-            Regarding this matter, a ${eventDetails.title.ifBlank { eventDetails.eventType.labelEn }} is ${if (eventDetails.isUpcoming) "scheduled for ${eventDetails.date} at ${eventDetails.venue}. Please attend and make your voice heard!" else "convened on ${eventDetails.date} at ${eventDetails.venue} where these issues were raised."}
-            """.trimIndent()
-        } else ""
-
-        val facebookHi = """
-            🙏 नमस्कार साथियों! 
-            
-            हमारे गांव $shortLoc से आज की ज़मीनी रिपोर्ट:
-            
-            कागजों पर कहा गया था:
-            "$claim"
-            
-            लेकिन जब हम मौके पर पहुंचे, तो हकीकत कुछ और ही निकली:
-            "$reality"
-            $fbEventHi
-            
-            क्या आपके गांव में भी ऐसा ही हाल है? नीचे कमेंट में बताएं और अपने सरपंच और स्थानीय जनप्रतिनिधियों को टैग करके सवाल पूछें। जब तक हम सब मिलकर आवाज़ नहीं उठाएंगे, तब तक बदलाव कैसे आएगा?
-            
-            साथी फाउंडेशन - गांव की आवाज़, देश की आवाज़।
-            $hashtagStr
-        """.trimIndent()
-
-        val facebookEn = """
-            🙏 Greetings friends and community members!
-            
-            Today's ground report from $shortLoc:
-            
-            On paper, the promise was:
-            "$claim"
-            
-            However, our ground inspection revealed the reality:
-            "$reality"
-            $fbEventEn
-            
-            Is this the situation in your village as well? Let us know in the comments below and tag your local representatives to demand accountability. Meaningful change happens when citizens speak up together!
-            
-            Saathi Foundation - Voice of the Village, Voice of the Nation.
-            $hashtagStr
+            $hashtagStr #PublicPolicy #GoodGovernance #InstitutionalReform #CivicAction #SocialAudit #PostCraft
         """.trimIndent()
 
         val proofSummary = if (hasImage) {
-            "फोटो में ग्रामीण क्षेत्र की बुनियादी सुविधाओं और दावों के विपरीत वास्तविक स्थिति दिखाई दे रही है।"
+            "मौके की तस्वीर में बुनियादी सुविधाओं के वादों के विपरीत वास्तविक स्थिति दिखाई दे रही है।"
         } else {
             "नागरिक अवलोकन व मौखिक साक्ष्यों पर आधारित रिपोर्ट।"
         }
@@ -256,17 +216,18 @@ object TemplatePostGenerator {
         return GeneratedPostBundle(
             twitterHindi = twitterHi,
             twitterEnglish = twitterEn,
-            instagramHindi = instaHi,
-            instagramEnglish = instaEn,
+            instagramFbHindi = instaFbHi,
+            instagramFbEnglish = instaFbEn,
+            pressReleaseHindi = pressReleaseHi,
+            pressReleaseEnglish = pressReleaseEn,
             linkedInHindi = linkedInHi,
             linkedInEnglish = linkedInEn,
-            facebookHindi = facebookHi,
-            facebookEnglish = facebookEn,
             suggestedHashtags = hashtags,
             alternativeTones = listOf("खोजी व तार्किक", "सकारात्मक आलोचना", "ज़मीनी दास्तान"),
             visualProofSummary = proofSummary,
-            handlesToTag = listOf("@CollectorSingrauli", "@MoJSDoWRRDGR", "@CMMadhyaPradesh"),
-            eventDetails = eventDetails
+            handlesToTag = listOf("@CollectorSingrauli", "@MoHUA_India", "@CMMadhyaPradesh"),
+            eventDetails = eventDetails,
+            scope = scope
         )
     }
 }

@@ -1,0 +1,11 @@
+{
+  "name": "postcraft-root",
+  "version": "2.5.0",
+  "private": true,
+  "description": "PostCraft | सोशल मीडिया पोस्ट एवं ग्राउंड रिपोर्ट जनरेटर",
+  "scripts": {
+    "dev": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "preview": "npm --prefix web run preview"
+  }
+}

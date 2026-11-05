@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,21 +49,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.auth.AuthManager
-import com.example.ui.theme.ForestTeal
-import com.example.ui.theme.SafetyOrange
-import com.example.ui.theme.SafetyOrangeDark
-import com.example.ui.theme.Zinc100
-import com.example.ui.theme.Zinc200
-import com.example.ui.theme.Zinc400
-import com.example.ui.theme.Zinc700
-import com.example.ui.theme.Zinc800
-import com.example.ui.theme.Zinc900
+import com.example.data.model.LanguageMode
+import com.example.ui.theme.AccentCyan
+import com.example.ui.theme.BorderHover
+import com.example.ui.theme.BorderSubtle
+import com.example.ui.theme.CardBackground
+import com.example.ui.theme.PrimaryNavy
+import com.example.ui.theme.PrimaryText
+import com.example.ui.theme.SecondaryBlue
+import com.example.ui.theme.SecondaryText
+import com.example.ui.util.AppStrings
 import com.google.firebase.auth.FirebaseUser
 
 @Composable
 fun AuthBar(
     currentUser: FirebaseUser?,
     authManager: AuthManager,
+    activeLanguage: LanguageMode = LanguageMode.HINDI,
     onAuthSuccess: (FirebaseUser) -> Unit,
     onSignOut: () -> Unit,
     onOpenHistory: () -> Unit,
@@ -73,18 +76,19 @@ fun AuthBar(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Subtle dark glassmorphism card (bg-zinc-900/90 border border-zinc-800 rounded-2xl p-4)
+    // Modern Newsroom Crisp White Card
     Card(
         modifier = modifier
             .fillMaxWidth()
             .testTag("auth_bar_card"),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Zinc900.copy(alpha = 0.92f)
+            containerColor = CardBackground
         ),
-        border = BorderStroke(1.dp, Zinc800)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -102,19 +106,20 @@ fun AuthBar(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
+                                .border(1.5.dp, SecondaryBlue, CircleShape)
                         )
                     } else {
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(if (currentUser != null) ForestTeal else SafetyOrangeDark),
+                                .background(if (currentUser != null) SecondaryBlue else PrimaryNavy),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AccountCircle,
                                 contentDescription = "Profile Icon",
-                                tint = Color.White,
+                                tint = if (currentUser != null) Color.White else AccentCyan,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -125,29 +130,30 @@ fun AuthBar(
                     Column {
                         if (currentUser != null) {
                             Text(
-                                text = currentUser.displayName?.ifBlank { "Citizen Journalist" } ?: "Citizen Journalist",
+                                text = currentUser.displayName?.ifBlank { AppStrings.defaultReporter(activeLanguage) }
+                                    ?: AppStrings.defaultReporter(activeLanguage),
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = Zinc100
+                                    color = PrimaryText
                                 ),
                                 maxLines = 1
                             )
                             Text(
-                                text = currentUser.email.orEmpty().ifBlank { "Verified Reporter" },
-                                style = MaterialTheme.typography.bodySmall.copy(color = Zinc400),
+                                text = currentUser.email.orEmpty().ifBlank { AppStrings.verifiedReporter(activeLanguage) },
+                                style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText),
                                 maxLines = 1
                             )
                         } else {
                             Text(
-                                text = "साथी फाउंडेशन | ग्राम आवाज़",
+                                text = AppStrings.orgTitle(activeLanguage),
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = SafetyOrange
+                                    color = PrimaryNavy
                                 )
                             )
                             Text(
-                                text = "Citizen Journalism & Ground Reality",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Zinc400)
+                                text = AppStrings.orgSubtitle(activeLanguage),
+                                style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText)
                             )
                         }
                     }
@@ -155,7 +161,7 @@ fun AuthBar(
 
                 Spacer(modifier = Modifier.width(10.dp))
 
-                // Right: Actions (Sleek Horizontal Sign-In Button or History + Sign-out)
+                // Right: Actions (Modern Newsroom Button or History + Sign-out)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -168,7 +174,7 @@ fun AuthBar(
                             Icon(
                                 imageVector = Icons.Default.History,
                                 contentDescription = "View Saved Reports",
-                                tint = ForestTeal
+                                tint = SecondaryBlue
                             )
                         }
 
@@ -178,25 +184,25 @@ fun AuthBar(
                             },
                             modifier = Modifier.testTag("sign_out_button"),
                             shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, Zinc700),
+                            border = BorderStroke(1.dp, BorderSubtle),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Logout,
                                 contentDescription = "Sign out",
                                 modifier = Modifier.size(15.dp),
-                                tint = Zinc400
+                                tint = SecondaryText
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Logout",
+                                text = AppStrings.logout(activeLanguage),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Zinc200
+                                color = PrimaryText
                             )
                         }
                     } else {
-                        // Sleek horizontal button: px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-medium text-xs flex items-center gap-2, whitespace-nowrap
+                        // Newsroom Navy Blue button with clean white text & cyan accent
                         Button(
                             onClick = {
                                 isLoading = true
@@ -221,7 +227,7 @@ fun AuthBar(
                             },
                             enabled = !isLoading,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = SafetyOrangeDark,
+                                containerColor = PrimaryNavy,
                                 contentColor = Color.White
                             ),
                             shape = RoundedCornerShape(12.dp),
@@ -236,7 +242,7 @@ fun AuthBar(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Signing In...",
+                                    text = AppStrings.signingIn(activeLanguage),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = Color.White,
@@ -248,13 +254,13 @@ fun AuthBar(
                                     imageVector = Icons.AutoMirrored.Filled.Login,
                                     contentDescription = "Sign in",
                                     modifier = Modifier.size(16.dp),
-                                    tint = Color.White
+                                    tint = AccentCyan
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Sign In with Google",
+                                    text = AppStrings.signInGoogle(activeLanguage),
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = Color.White,
                                     maxLines = 1,
                                     softWrap = false

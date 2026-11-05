@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/gramawaz_launcher_1793889307405"
+        android:drawable="@drawable/ic_postcraft_logo"
         android:gravity="center" />
 </layer-list>

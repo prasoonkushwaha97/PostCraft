@@ -5,6 +5,7 @@ import android.util.Log
 import com.example.data.model.CampaignTheme
 import com.example.data.model.EventDetails
 import com.example.data.model.GeneratedPostBundle
+import com.example.data.model.IssueScope
 import com.example.data.model.ReportTone
 import com.example.data.model.SearchCitation
 import com.google.firebase.Firebase
@@ -28,39 +29,39 @@ class FirebaseAiRepository {
     private val postGenerationSchema = Schema.obj(
         properties = mapOf(
             "visualProofSummary" to Schema.string(
-                description = "1-2 sentence objective summary of what is seen in the ground reality photo or field context"
+                description = "1-2 sentence objective factual summary of what is observed in the ground reality photo or field context"
             ),
             "suggestedHashtags" to Schema.array(
                 items = Schema.string(),
-                description = "3 to 6 targeted hashtags for citizen journalism and rural governance"
+                description = "3 to 6 targeted hashtags for citizen journalism, governance, or urban/rural civic awareness"
             ),
             "alternativeTones" to Schema.array(
                 items = Schema.string(),
-                description = "2 to 3 alternative angles or tone suggestions for this story"
+                description = "2 to 3 alternative editorial angles or tone recommendations for this public issue"
             ),
             "twitterHindi" to Schema.string(
-                description = "Twitter / X post in Hindi, punchy hook, contrast (दावा vs हकीकत), event notice if applicable, under 280 characters with tags and hashtags"
+                description = "X (Twitter) post in Hindi under 280 characters with punchy hook, crisp दावा vs हक़ीक़त contrast, tagging relevant authorities/ministers, and 3 hashtags"
             ),
             "twitterEnglish" to Schema.string(
-                description = "Twitter / X post in English, punchy hook, contrast (Claim vs Reality), event notice if applicable, under 280 characters with tags and hashtags"
+                description = "X (Twitter) post in English under 280 characters with punchy hook, crisp Claim vs Ground Reality contrast, tagging authorities, and 3 hashtags"
             ),
-            "instagramHindi" to Schema.string(
-                description = "Instagram caption in Hindi with emotional storytelling hook, bullet points of reality vs claims, event announcement/CTA, and structured hashtags"
+            "instagramFbHindi" to Schema.string(
+                description = "Instagram / Facebook post in Hindi with engaging storytelling hook, clear bulleted breakdown of ground facts vs official claims, citizen engagement question, and hashtags"
             ),
-            "instagramEnglish" to Schema.string(
-                description = "Instagram caption in English with emotional storytelling hook, bullet points of reality vs claims, event announcement/CTA, and structured hashtags"
+            "instagramFbEnglish" to Schema.string(
+                description = "Instagram / Facebook post in English with engaging storytelling hook, bulleted breakdown of ground facts vs claims, citizen engagement question, and hashtags"
+            ),
+            "pressReleaseHindi" to Schema.string(
+                description = "Press Release & WhatsApp Bulletin in Hindi: Formal 3-paragraph inverted pyramid press note with headline, dateline, factual findings, civic quote, and accountability demand"
+            ),
+            "pressReleaseEnglish" to Schema.string(
+                description = "Press Release & WhatsApp Bulletin in English: Formal 3-paragraph inverted pyramid press note with headline, dateline, factual findings, civic quote, and accountability demand"
             ),
             "linkedInHindi" to Schema.string(
-                description = "LinkedIn post in Hindi with public policy implementation analysis, Gram Panchayat accountability, event relevance, and constructive recommendations"
+                description = "LinkedIn & Policy Analysis in Hindi examining public governance gaps, systemic delivery failures, administrative audit, and constructive solutions"
             ),
             "linkedInEnglish" to Schema.string(
-                description = "LinkedIn post in English with public policy implementation analysis, Gram Panchayat accountability, event relevance, and constructive recommendations"
-            ),
-            "facebookHindi" to Schema.string(
-                description = "Facebook community post in Hindi in conversational tone inviting locals to attend the event, comment, and tag representatives"
-            ),
-            "facebookEnglish" to Schema.string(
-                description = "Facebook community post in English in conversational tone inviting locals to attend the event, comment, and tag representatives"
+                description = "LinkedIn & Policy Analysis in English examining public policy implementation, systemic delivery failures, audit mechanisms, and civic recommendations"
             )
         )
     )
@@ -88,16 +89,16 @@ class FirebaseAiRepository {
 
     /**
      * Executes Google Search Grounding to verify real-time government scheme guidelines,
-     * official portal claims, budget status, or recent district administrative orders.
+     * official portal claims, municipal resolutions, budget status, or recent district administrative orders.
      */
     suspend fun fetchOfficialSchemeSearchGrounding(
         schemeOrClaim: String,
         location: String
     ): Result<Pair<String, List<SearchCitation>>> = withContext(Dispatchers.IO) {
         try {
-            val searchQuery = "Government scheme facts guidelines status: $schemeOrClaim in $location India official portal"
+            val searchQuery = "Government official scheme municipal claim status guidelines: $schemeOrClaim in $location official portal"
             val prompt = """
-                You are a research journalist fact-checking official government data.
+                You are an investigative citizen journalist fact-checking official government, municipal, or scheme claims.
                 Using Google Search, find the official guidelines, latest news, and verified administrative status for:
                 Query: $searchQuery
                 Location: $location
@@ -139,10 +140,11 @@ class FirebaseAiRepository {
 
     suspend fun generateSocialPosts(
         theme: CampaignTheme,
-        village: String,
-        tehsil: String,
+        scope: IssueScope,
+        localUnit: String,
+        subDistrict: String,
         district: String,
-        state: String,
+        stateRegion: String,
         claim: String,
         groundReality: String,
         tone: ReportTone,
@@ -151,21 +153,21 @@ class FirebaseAiRepository {
         groundedFactsContext: String? = null
     ): Result<GeneratedPostBundle> = withContext(Dispatchers.IO) {
         try {
+            val locationSummary = listOf(localUnit, subDistrict, district, stateRegion).filter { it.isNotBlank() }.joinToString(", ")
+
             val promptText = buildString {
-                appendLine("You are an expert citizen journalist and rural governance communications specialist for Saathi Foundation.")
-                appendLine("Generate multi-platform social media posts analyzing ground reality versus official government promises.")
+                appendLine("You are an expert citizen journalist and public policy communications specialist.")
+                appendLine("Generate universal, multi-platform social media posts analyzing ground reality versus official government or municipal promises.")
                 appendLine()
-                appendLine("CAMPAIGN DETAILS:")
-                appendLine("- Campaign Theme: ${theme.labelHi} / ${theme.labelEn}")
-                appendLine("- Village: $village")
-                appendLine("- Tehsil/Block: $tehsil")
-                appendLine("- District: $district")
-                appendLine("- State: $state")
+                appendLine("ISSUE PARAMETERS:")
+                appendLine("- Issue Category: ${theme.labelHi} / ${theme.labelEn}")
+                appendLine("- Geographic Scope: ${scope.labelHi} (${scope.labelEn})")
+                appendLine("- Location: $locationSummary")
                 appendLine("- Selected Tone: ${tone.labelHi} (${tone.labelEn})")
                 appendLine()
                 appendLine("FIELD CONTEXT:")
-                appendLine("- Official Claim / Paper Scheme: $claim")
-                appendLine("- Ground Reality (ज़मीनी हकीकत): $groundReality")
+                appendLine("- Official Claim / Promised Scheme: $claim")
+                appendLine("- Ground Reality (ज़मीनी हक़ीक़त): $groundReality")
 
                 if (!groundedFactsContext.isNullOrBlank()) {
                     appendLine("- Verified Google Search Grounded Facts: $groundedFactsContext")
@@ -173,31 +175,25 @@ class FirebaseAiRepository {
 
                 if (eventDetails.hasEvent) {
                     appendLine()
-                    appendLine("RELATED EVENT / OCCASION (संबंधित आयोजन):")
+                    appendLine("RELATED CIVIC / ADMINISTRATIVE EVENT (संबंधित आयोजन):")
                     appendLine("- Event Type: ${eventDetails.eventType.labelHi} (${eventDetails.eventType.labelEn})")
                     if (eventDetails.title.isNotBlank()) appendLine("- Title: ${eventDetails.title}")
                     if (eventDetails.date.isNotBlank()) appendLine("- Date & Time: ${eventDetails.date}")
-                    if (eventDetails.venue.isNotBlank()) appendLine("- Venue / Location: ${eventDetails.venue}")
+                    if (eventDetails.venue.isNotBlank()) appendLine("- Venue: ${eventDetails.venue}")
                     appendLine("- Is Upcoming: ${eventDetails.isUpcoming}")
-                    appendLine("CRITICAL EVENT INSTRUCTION: Feature this related event prominently in the posts!")
-                    if (eventDetails.isUpcoming) {
-                        appendLine("Urge local villagers to attend the event (${eventDetails.title.ifBlank { eventDetails.eventType.labelHi }} on ${eventDetails.date} at ${eventDetails.venue}), ask accountability questions, and present this ground reality evidence!")
-                    } else {
-                        appendLine("Report on what occurred during this event, contrasting official statements with the ground evidence!")
-                    }
+                    appendLine("CRITICAL INSTRUCTION: Weave this event prominently into the posts as a mobilization point or hearing forum!")
                 }
 
                 if (visualBitmap != null) {
                     appendLine("- Visual Proof Image attached: Analyze this image and provide a concise visual summary reflecting the ground status.")
                 }
                 appendLine()
-                appendLine("PLATFORM INSTRUCTIONS:")
-                appendLine("1. Twitter (X): Strict constraint - MUST be under 280 characters! Include hook, concise दावा vs हकीकत contrast, event call if present, question to authorities (@CollectorSingrauli or relevant), and 3-4 hashtags.")
-                appendLine("2. Instagram: Storytelling caption, engaging hook, bullet points contrasting Claim vs Ground Reality, clear Call to Action (CTA) mentioning the event date/venue if present, and structured hashtags.")
-                appendLine("3. LinkedIn: Professional policy and public administration analysis highlighting scheme delivery gaps, Panchayat accountability, the significance of the forum/event, and constructive civic solutions.")
-                appendLine("4. Facebook: Conversational, community-friendly tone inviting local citizens to attend the event, discuss in comments, and tag local representatives.")
-                appendLine("5. Hashtags & Tones: Suggest targeted hashtags and alternative tone angles.")
-                appendLine("Generate accurate, authentic Hindi in Devanagari and natural, impactful English for each platform.")
+                appendLine("PLATFORM OUTPUT REQUIREMENTS:")
+                appendLine("1. Twitter (X): STRICTLY under 280 characters! Sharp hook, Claim vs Reality contrast, question to authorities, and 3 hashtags.")
+                appendLine("2. Instagram / Facebook: Engaging storytelling caption with a bold hook, bulleted ground facts vs claims, public engagement questions, and structured hashtags.")
+                appendLine("3. Press Release & WhatsApp Bulletin: Formal 3-paragraph inverted pyramid press note ready for local reporters and citizen WhatsApp groups, with Headline, Dateline, facts, civic quote, and clear accountability demand.")
+                appendLine("4. LinkedIn / Policy Analysis: High-level governance analysis highlighting institutional delivery gaps, audit mechanisms, and constructive civic policy recommendations.")
+                appendLine("Provide high-quality, authentic Hindi in Devanagari (no English slashes in Hindi text) and natural, impactful English for each platform.")
             }
 
             val response = withTimeout(60_000L) {
@@ -236,17 +232,18 @@ class FirebaseAiRepository {
             val bundle = GeneratedPostBundle(
                 twitterHindi = json.optString("twitterHindi"),
                 twitterEnglish = json.optString("twitterEnglish"),
-                instagramHindi = json.optString("instagramHindi"),
-                instagramEnglish = json.optString("instagramEnglish"),
+                instagramFbHindi = json.optString("instagramFbHindi"),
+                instagramFbEnglish = json.optString("instagramFbEnglish"),
+                pressReleaseHindi = json.optString("pressReleaseHindi"),
+                pressReleaseEnglish = json.optString("pressReleaseEnglish"),
                 linkedInHindi = json.optString("linkedInHindi"),
                 linkedInEnglish = json.optString("linkedInEnglish"),
-                facebookHindi = json.optString("facebookHindi"),
-                facebookEnglish = json.optString("facebookEnglish"),
                 suggestedHashtags = hashtagsList,
                 alternativeTones = altTonesList,
                 visualProofSummary = json.optString("visualProofSummary"),
-                handlesToTag = listOf("@CollectorSingrauli", "@MoJSDoWRRDGR", "@CMMadhyaPradesh"),
-                eventDetails = eventDetails
+                handlesToTag = listOf("@CollectorSingrauli", "@MoHUA_India", "@CMMadhyaPradesh"),
+                eventDetails = eventDetails,
+                scope = scope
             )
 
             Result.success(bundle)

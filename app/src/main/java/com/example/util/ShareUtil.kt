@@ -25,7 +25,7 @@ private const val TAG = "ShareUtil"
 
 object ShareUtil {
 
-    fun shareText(context: Context, text: String, subject: String = "GramAwaz Ground Report") {
+    fun shareText(context: Context, text: String, subject: String = "PostCraft Ground Report") {
         try {
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
@@ -43,12 +43,12 @@ object ShareUtil {
         context: Context,
         bitmap: Bitmap,
         captionText: String,
-        title: String = "Share Ground Reality Report"
+        title: String = "Share PostCraft Report"
     ) {
         try {
             val cachePath = File(context.cacheDir, "images")
             cachePath.mkdirs()
-            val imageFile = File(cachePath, "gramawaz_report_${System.currentTimeMillis()}.png")
+            val imageFile = File(cachePath, "postcraft_report_${System.currentTimeMillis()}.png")
             val stream = FileOutputStream(imageFile)
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
             stream.flush()
@@ -75,7 +75,7 @@ object ShareUtil {
     }
 
     fun saveBitmapToDevice(context: Context, bitmap: Bitmap): Boolean {
-        val filename = "GramAwaz_${System.currentTimeMillis()}.jpg"
+        val filename = "PostCraft_${System.currentTimeMillis()}.jpg"
         var outputStream: OutputStream? = null
 
         return try {
@@ -83,7 +83,7 @@ object ShareUtil {
                 val values = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, filename)
                     put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/GramAwaz")
+                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/PostCraft")
                     put(MediaStore.Images.Media.IS_PENDING, 1)
                 }
 
@@ -94,19 +94,19 @@ object ShareUtil {
                     values.clear()
                     values.put(MediaStore.Images.Media.IS_PENDING, 0)
                     context.contentResolver.update(uri, values, null, null)
-                    Toast.makeText(context, "Card saved to Pictures/GramAwaz!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Card saved to Pictures/PostCraft!", Toast.LENGTH_LONG).show()
                     true
                 } else {
                     false
                 }
             } else {
-                val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString() + "/GramAwaz"
+                val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString() + "/PostCraft"
                 val dir = File(imagesDir)
                 if (!dir.exists()) dir.mkdirs()
                 val file = File(dir, filename)
                 outputStream = FileOutputStream(file)
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
-                Toast.makeText(context, "Card saved to Pictures/GramAwaz!", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Card saved to Pictures/PostCraft!", Toast.LENGTH_LONG).show()
                 true
             }
         } catch (e: Exception) {
@@ -123,61 +123,67 @@ object ShareUtil {
      */
     fun createVisualQuoteCard(
         context: Context,
-        village: String,
+        locationTitle: String,
         district: String,
         claim: String,
         reality: String,
         proofBitmap: Bitmap?,
-        eventBadge: String = ""
+        eventBadge: String = "",
+        categoryLabel: String = ""
     ): Bitmap {
         val width = 1080
         val height = 1350
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
-        // Modern Zinc/Dark Background
-        val bgPaint = Paint().apply { color = Color.parseColor("#09090B") }
+        // Modern Newsroom Background (#F4F7FA)
+        val bgPaint = Paint().apply { color = Color.parseColor("#F4F7FA") }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
 
-        // Top Header Banner (Safety Orange #EA580C)
-        val headerPaint = Paint().apply { color = Color.parseColor("#EA580C") }
-        canvas.drawRect(0f, 0f, width.toFloat(), 150f, headerPaint)
+        // Top Header Banner (Primary Navy #10243A with Electric Cyan #20C5D8 accent)
+        val headerPaint = Paint().apply { color = Color.parseColor("#10243A") }
+        canvas.drawRect(0f, 0f, width.toFloat(), 155f, headerPaint)
+
+        // Electric Cyan highlight strip
+        val cyanStripPaint = Paint().apply { color = Color.parseColor("#20C5D8") }
+        canvas.drawRect(0f, 150f, width.toFloat(), 155f, cyanStripPaint)
 
         val headerTextPaint = Paint().apply {
             color = Color.WHITE
-            textSize = 48f
+            textSize = 46f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("ग्राम आवाज़ | साथी फाउंडेशन", 60f, 95f, headerTextPaint)
+        canvas.drawText("पोस्ट क्राफ्ट | PostCraft", 60f, 92f, headerTextPaint)
 
         val subheaderPaint = Paint().apply {
-            color = Color.parseColor("#FFEDD5")
-            textSize = 26f
+            color = Color.parseColor("#E2E8F0")
+            textSize = 24f
             typeface = Typeface.DEFAULT
             isAntiAlias = true
         }
-        val locText = "स्थान: ${if (village.isNotBlank()) village else "ग्रामीण क्षेत्र"}, $district"
-        canvas.drawText(locText, 60f, 135f, subheaderPaint)
+        val displayLoc = listOf(locationTitle, district).filter { it.isNotBlank() }.joinToString(", ")
+        val locText = "स्थान: ${displayLoc.ifBlank { "क्षेत्रीय स्थल" }} ${if (categoryLabel.isNotBlank()) "• $categoryLabel" else ""}"
+        canvas.drawText(locText, 60f, 134f, subheaderPaint)
 
-        var currentY = 175f
+        var currentY = 180f
 
         // Event Banner if available
         if (eventBadge.isNotBlank()) {
             val eventRect = RectF(60f, currentY, (width - 60).toFloat(), currentY + 70f)
-            val eventBgPaint = Paint().apply { color = Color.parseColor("#18181B") }
+            val eventBgPaint = Paint().apply { color = Color.WHITE }
             val eventBorderPaint = Paint().apply {
-                color = Color.parseColor("#F97316")
+                color = Color.parseColor("#176B87")
                 style = Paint.Style.STROKE
-                strokeWidth = 3f
+                strokeWidth = 2.5f
                 isAntiAlias = true
             }
             canvas.drawRoundRect(eventRect, 14f, 14f, eventBgPaint)
             canvas.drawRoundRect(eventRect, 14f, 14f, eventBorderPaint)
 
             val eventTextPaint = Paint().apply {
-                color = Color.parseColor("#F97316")
-                textSize = 26f
+                color = Color.parseColor("#176B87")
+                textSize = 25f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 isAntiAlias = true
             }
@@ -194,11 +200,11 @@ object ShareUtil {
             canvas.drawBitmap(proofBitmap, srcRect, dstRect, Paint(Paint.FILTER_BITMAP_FLAG))
             currentY += photoHeight + 25f
         } else {
-            val bannerHeight = if (eventBadge.isNotBlank()) 180f else 220f
+            val bannerHeight = if (eventBadge.isNotBlank()) 170f else 210f
             val bannerRect = RectF(60f, currentY, (width - 60).toFloat(), currentY + bannerHeight)
-            val placeholderPaint = Paint().apply { color = Color.parseColor("#18181B") }
+            val placeholderPaint = Paint().apply { color = Color.WHITE }
             val placeholderBorder = Paint().apply {
-                color = Color.parseColor("#27272A")
+                color = Color.parseColor("#E2E8F0")
                 style = Paint.Style.STROKE
                 strokeWidth = 2f
             }
@@ -206,33 +212,33 @@ object ShareUtil {
             canvas.drawRoundRect(bannerRect, 16f, 16f, placeholderBorder)
 
             val bannerTextPaint = Paint().apply {
-                color = Color.parseColor("#FAFAFA")
+                color = Color.parseColor("#10243A")
                 textSize = 34f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 isAntiAlias = true
             }
-            canvas.drawText("नागरिक पत्रकारिता एवं ग्रामीण सुशासन", 90f, currentY + 80f, bannerTextPaint)
+            canvas.drawText("नागरिक पत्रकारिता एवं जन-जवाबदेही", 90f, currentY + 75f, bannerTextPaint)
             val bannerSubPaint = Paint().apply {
-                color = Color.parseColor("#A1A1AA")
+                color = Color.parseColor("#64748B")
                 textSize = 24f
                 isAntiAlias = true
             }
-            canvas.drawText("धरातल की सच्चाई vs कागज़ी विकास योजनाएं", 90f, currentY + 125f, bannerSubPaint)
+            canvas.drawText("धरातल की सच्चाई बनाम आधिकारिक वादे", 90f, currentY + 120f, bannerSubPaint)
             currentY += bannerHeight + 25f
         }
 
-        // Section 1: Official Claim Card
+        // Section 1: Official Claim Card (White Card with #176B87 Secondary Blue header)
         val claimCardRect = RectF(60f, currentY, (width - 60).toFloat(), currentY + 210f)
-        val claimBg = Paint().apply { color = Color.parseColor("#18181B") }
-        val claimBorder = Paint().apply {
-            color = Color.parseColor("#1D4ED8")
+        val cardBg = Paint().apply { color = Color.WHITE }
+        val cardBorder = Paint().apply {
+            color = Color.parseColor("#E2E8F0")
             style = Paint.Style.STROKE
             strokeWidth = 2f
         }
-        canvas.drawRoundRect(claimCardRect, 16f, 16f, claimBg)
-        canvas.drawRoundRect(claimCardRect, 16f, 16f, claimBorder)
+        canvas.drawRoundRect(claimCardRect, 16f, 16f, cardBg)
+        canvas.drawRoundRect(claimCardRect, 16f, 16f, cardBorder)
 
-        val claimBadgePaint = Paint().apply { color = Color.parseColor("#2563EB") }
+        val claimBadgePaint = Paint().apply { color = Color.parseColor("#176B87") }
         canvas.drawRoundRect(RectF(85f, currentY + 20f, 320f, currentY + 62f), 8f, 8f, claimBadgePaint)
 
         val badgeTextPaint = Paint().apply {
@@ -241,10 +247,10 @@ object ShareUtil {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("📋 सरकारी दावा", 105f, currentY + 50f, badgeTextPaint)
+        canvas.drawText("📋 आधिकारिक दावा", 105f, currentY + 50f, badgeTextPaint)
 
         val claimTextPaint = Paint().apply {
-            color = Color.parseColor("#E4E4E7")
+            color = Color.parseColor("#172B3A")
             textSize = 28f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             isAntiAlias = true
@@ -254,23 +260,22 @@ object ShareUtil {
 
         currentY += 235f
 
-        // Section 2: Ground Reality Card
+        // Section 2: Ground Reality Card (White Card with #D64545 Error Red header)
         val realityCardRect = RectF(60f, currentY, (width - 60).toFloat(), currentY + 250f)
-        val realityBg = Paint().apply { color = Color.parseColor("#18181B") }
         val realityBorder = Paint().apply {
-            color = Color.parseColor("#DC2626")
+            color = Color.parseColor("#FECACA")
             style = Paint.Style.STROKE
             strokeWidth = 2.5f
         }
-        canvas.drawRoundRect(realityCardRect, 16f, 16f, realityBg)
+        canvas.drawRoundRect(realityCardRect, 16f, 16f, cardBg)
         canvas.drawRoundRect(realityCardRect, 16f, 16f, realityBorder)
 
-        val realityBadgePaint = Paint().apply { color = Color.parseColor("#EF4444") }
+        val realityBadgePaint = Paint().apply { color = Color.parseColor("#D64545") }
         canvas.drawRoundRect(RectF(85f, currentY + 20f, 360f, currentY + 62f), 8f, 8f, realityBadgePaint)
-        canvas.drawText("⚠️ ज़मीनी हकीकत", 105f, currentY + 50f, badgeTextPaint)
+        canvas.drawText("⚠️ ज़मीनी हक़ीक़त", 105f, currentY + 50f, badgeTextPaint)
 
         val realityTextPaint = Paint().apply {
-            color = Color.parseColor("#FAFAFA")
+            color = Color.parseColor("#172B3A")
             textSize = 30f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
@@ -279,24 +284,24 @@ object ShareUtil {
         canvas.drawText(realitySample, 85f, currentY + 115f, realityTextPaint)
 
         val callToActionPaint = Paint().apply {
-            color = Color.parseColor("#F87171")
+            color = Color.parseColor("#D64545")
             textSize = 24f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("जिम्मेदार प्रशासन व जनप्रतिनिधि जवाब दें!", 85f, currentY + 185f, callToActionPaint)
+        canvas.drawText("संबद्ध विभाग व जिम्मेदार अधिकारी संज्ञान लें!", 85f, currentY + 185f, callToActionPaint)
 
-        // Bottom Footer (Deep Charcoal / Zinc)
-        val footerPaint = Paint().apply { color = Color.parseColor("#18181B") }
+        // Bottom Footer (Navy Blue #10243A with Electric Cyan text)
+        val footerPaint = Paint().apply { color = Color.parseColor("#10243A") }
         canvas.drawRect(0f, (height - 85).toFloat(), width.toFloat(), height.toFloat(), footerPaint)
 
         val footerTextPaint = Paint().apply {
-            color = Color.parseColor("#A1A1AA")
+            color = Color.parseColor("#20C5D8")
             textSize = 22f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("साथी फाउंडेशन | ग्राम आवाज़ #GroundReality #CitizenJournalism", 60f, (height - 35).toFloat(), footerTextPaint)
+        canvas.drawText("पोस्ट क्राफ्ट | PostCraft  #CitizenJournalism  #GroundReality  #PublicAccountability", 60f, (height - 35).toFloat(), footerTextPaint)
 
         return bitmap
     }

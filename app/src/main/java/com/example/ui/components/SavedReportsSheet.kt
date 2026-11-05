@@ -42,22 +42,21 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.model.CampaignReport
-import com.example.ui.theme.ClaimBlue
-import com.example.ui.theme.ForestTeal
-import com.example.ui.theme.RealityRed
-import com.example.ui.theme.SafetyOrange
-import com.example.ui.theme.Zinc100
-import com.example.ui.theme.Zinc200
-import com.example.ui.theme.Zinc300
-import com.example.ui.theme.Zinc400
-import com.example.ui.theme.Zinc700
-import com.example.ui.theme.Zinc800
-import com.example.ui.theme.Zinc900
-import com.example.ui.theme.Zinc950
+import com.example.data.model.LanguageMode
+import com.example.ui.theme.BorderSubtle
+import com.example.ui.theme.CardBackground
+import com.example.ui.theme.CardBackgroundMuted
+import com.example.ui.theme.ErrorRed
+import com.example.ui.theme.PrimaryNavy
+import com.example.ui.theme.PrimaryText
+import com.example.ui.theme.SecondaryBlue
+import com.example.ui.theme.SecondaryText
+import com.example.ui.util.AppStrings
 
 @Composable
 fun SavedReportsDialog(
     reports: List<CampaignReport>,
+    mode: LanguageMode = LanguageMode.HINDI,
     onSelectReport: (CampaignReport) -> Unit,
     onDeleteReport: (String) -> Unit,
     onDismiss: () -> Unit
@@ -72,8 +71,9 @@ fun SavedReportsDialog(
                 .height(560.dp)
                 .clip(RoundedCornerShape(20.dp))
                 .testTag("saved_reports_dialog"),
-            colors = CardDefaults.cardColors(containerColor = Zinc900),
-            border = BorderStroke(1.dp, Zinc800)
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+            border = BorderStroke(1.dp, BorderSubtle)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 // Header
@@ -86,21 +86,21 @@ fun SavedReportsDialog(
                         Icon(
                             imageVector = Icons.Default.History,
                             contentDescription = null,
-                            tint = ForestTeal,
+                            tint = SecondaryBlue,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = "Campaign History (सहेजी गई रिपोर्ट्स)",
+                                text = AppStrings.historyTitle(mode),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = Zinc100
+                                    color = PrimaryNavy
                                 )
                             )
                             Text(
-                                text = "${reports.size} reports saved to your profile",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Zinc400)
+                                text = AppStrings.reportsCount(mode, reports.size),
+                                style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText)
                             )
                         }
                     }
@@ -109,7 +109,7 @@ fun SavedReportsDialog(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = Zinc400
+                            tint = SecondaryText
                         )
                     }
                 }
@@ -127,17 +127,20 @@ fun SavedReportsDialog(
                             Icon(
                                 imageVector = Icons.Default.History,
                                 contentDescription = null,
-                                tint = Zinc700,
+                                tint = BorderSubtle,
                                 modifier = Modifier.size(48.dp)
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "No saved reports found",
-                                style = MaterialTheme.typography.bodyMedium.copy(color = Zinc300)
+                                text = AppStrings.noSavedReports(mode),
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = PrimaryText,
+                                    fontWeight = FontWeight.Medium
+                                )
                             )
                             Text(
-                                text = "Generate posts and tap 'Save to Profile' to build your campaign portfolio.",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Zinc400),
+                                text = AppStrings.noSavedReportsDesc(mode),
+                                style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                         }
@@ -148,6 +151,10 @@ fun SavedReportsDialog(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(reports, key = { it.id }) { report ->
+                            val locationText = listOf(report.localUnit.ifBlank { report.village }, report.district)
+                                .filter { it.isNotBlank() }
+                                .joinToString(", ")
+
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -157,8 +164,8 @@ fun SavedReportsDialog(
                                     }
                                     .testTag("saved_report_item_${report.id}"),
                                 shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(containerColor = Zinc950),
-                                border = BorderStroke(1.dp, Zinc800)
+                                colors = CardDefaults.cardColors(containerColor = CardBackgroundMuted),
+                                border = BorderStroke(1.dp, BorderSubtle)
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Row(
@@ -170,15 +177,15 @@ fun SavedReportsDialog(
                                             Icon(
                                                 imageVector = Icons.Default.LocationOn,
                                                 contentDescription = null,
-                                                tint = SafetyOrange,
+                                                tint = SecondaryBlue,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(
-                                                text = "${report.village}, ${report.district}",
+                                                text = locationText.ifBlank { "PostCraft Report" },
                                                 style = MaterialTheme.typography.titleSmall.copy(
                                                     fontWeight = FontWeight.Bold,
-                                                    color = Zinc100
+                                                    color = PrimaryNavy
                                                 )
                                             )
                                         }
@@ -190,7 +197,7 @@ fun SavedReportsDialog(
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
                                                 contentDescription = "Delete report",
-                                                tint = RealityRed,
+                                                tint = ErrorRed,
                                                 modifier = Modifier.size(18.dp)
                                             )
                                         }
@@ -204,15 +211,16 @@ fun SavedReportsDialog(
                                             Icon(
                                                 imageVector = Icons.Default.Event,
                                                 contentDescription = null,
-                                                tint = SafetyOrange,
+                                                tint = SecondaryBlue,
                                                 modifier = Modifier.size(13.dp)
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
+                                            val eventPrefix = if (mode == LanguageMode.HINDI) "आयोजन:" else "Event:"
                                             Text(
-                                                text = "आयोजन: ${report.eventTitle}",
+                                                text = "$eventPrefix ${report.eventTitle}",
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Medium,
-                                                color = SafetyOrange
+                                                color = SecondaryBlue
                                             )
                                         }
                                     }
@@ -223,10 +231,10 @@ fun SavedReportsDialog(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Surface(
                                             shape = RoundedCornerShape(4.dp),
-                                            color = ClaimBlue
+                                            color = SecondaryBlue
                                         ) {
                                             Text(
-                                                text = "दावा",
+                                                text = if (mode == LanguageMode.HINDI) "दावा" else "Claim",
                                                 fontSize = 9.sp,
                                                 color = Color.White,
                                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
@@ -235,7 +243,7 @@ fun SavedReportsDialog(
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = report.claim,
-                                            style = MaterialTheme.typography.bodySmall.copy(color = Zinc300),
+                                            style = MaterialTheme.typography.bodySmall.copy(color = SecondaryText),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -247,10 +255,10 @@ fun SavedReportsDialog(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Surface(
                                             shape = RoundedCornerShape(4.dp),
-                                            color = RealityRed
+                                            color = ErrorRed
                                         ) {
                                             Text(
-                                                text = "हकीकत",
+                                                text = if (mode == LanguageMode.HINDI) "हकीकत" else "Reality",
                                                 fontSize = 9.sp,
                                                 color = Color.White,
                                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
@@ -259,7 +267,7 @@ fun SavedReportsDialog(
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = report.groundReality,
-                                            style = MaterialTheme.typography.bodySmall.copy(color = Zinc200),
+                                            style = MaterialTheme.typography.bodySmall.copy(color = PrimaryText),
                                             fontWeight = FontWeight.Medium,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis

@@ -2,6 +2,7 @@ package com.example.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,8 +15,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
@@ -42,26 +46,34 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.example.auth.AuthManager
+import com.example.data.model.LanguageMode
 import com.example.ui.components.AuthBar
 import com.example.ui.components.CameraCaptureDialog
 import com.example.ui.components.ReportFormPane
 import com.example.ui.components.SavedReportsDialog
 import com.example.ui.components.SocialPreviewDeck
 import com.example.ui.components.VisualQuoteCardDialog
-import com.example.ui.theme.SafetyOrange
-import com.example.ui.theme.Zinc100
-import com.example.ui.theme.Zinc400
-import com.example.ui.theme.Zinc800
-import com.example.ui.theme.Zinc900
-import com.example.ui.theme.Zinc950
+import com.example.ui.theme.AccentCyan
+import com.example.ui.theme.BorderSubtle
+import com.example.ui.theme.CardBackground
+import com.example.ui.theme.MainBackground
+import com.example.ui.theme.PrimaryNavy
+import com.example.ui.theme.PrimaryText
+import com.example.ui.theme.SecondaryBlue
+import com.example.ui.theme.SecondaryText
+import com.example.ui.util.AppStrings
 import com.example.ui.viewmodel.GenerationUiState
 import com.example.ui.viewmodel.GramAwazViewModel
 import com.google.firebase.Firebase
@@ -122,27 +134,98 @@ fun GramAwazApp(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = "GramAwaz | ग्राम आवाज़",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = SafetyOrange
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Design 1: Modern 3D 'PC' monogram as primary app icon on crisp newsroom badge
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .border(1.dp, AccentCyan.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_postcraft_logo),
+                                contentDescription = "PostCraft Logo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
                             )
-                        )
-                        Text(
-                            text = "Citizen Journalism & Rural Governance | साथी फाउंडेशन",
-                            style = MaterialTheme.typography.labelSmall.copy(color = Zinc400)
-                        )
+                        }
+
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = AppStrings.appTitle(activeLanguage),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        fontSize = 17.sp,
+                                        letterSpacing = 0.3.sp
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(AccentCyan)
+                                )
+                            }
+                            Text(
+                                text = AppStrings.appSubtitle(activeLanguage),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = Color(0xFFCBD5E1),
+                                    fontSize = 11.sp
+                                ),
+                                maxLines = 1
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    // Header Language Switcher Pill (Single-Tap Toggle between हिंदी / English)
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF0A1828),
+                        border = BorderStroke(1.dp, AccentCyan.copy(alpha = 0.3f)),
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            LanguageMode.entries.forEach { lang ->
+                                val isSelected = activeLanguage == lang
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isSelected) AccentCyan else Color.Transparent)
+                                        .clickable { viewModel.selectLanguage(lang) }
+                                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                                        .testTag("header_lang_toggle_${lang.name.lowercase()}"),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = lang.label,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) PrimaryNavy else Color(0xFF94A3B8)
+                                    )
+                                }
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Zinc950
+                    containerColor = PrimaryNavy
                 )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Zinc950,
+        containerColor = MainBackground,
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         Column(
@@ -150,10 +233,11 @@ fun GramAwazApp(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Top Auth / User Profile Glassmorphism Bar
+            // Top Auth / User Profile Newsroom White Card
             AuthBar(
                 currentUser = currentUser,
                 authManager = authManager,
+                activeLanguage = activeLanguage,
                 onAuthSuccess = { user ->
                     currentUser = user
                     Toast.makeText(context, "Welcome ${user.displayName.orEmpty()}", Toast.LENGTH_SHORT).show()
@@ -165,7 +249,7 @@ fun GramAwazApp(
                 onOpenHistory = {
                     showHistoryDialog = true
                 },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
             // Responsive Dual-Pane vs Mobile Segmented Tabs
@@ -185,11 +269,13 @@ fun GramAwazApp(
                                 formState = formState,
                                 generationState = generationState,
                                 searchGroundingState = searchGroundingState,
+                                activeLanguage = activeLanguage,
+                                onScopeChanged = viewModel::updateScope,
                                 onThemeChanged = viewModel::updateTheme,
-                                onVillageChanged = viewModel::updateVillage,
-                                onTehsilChanged = viewModel::updateTehsil,
+                                onLocalUnitChanged = viewModel::updateLocalUnit,
+                                onSubDistrictChanged = viewModel::updateSubDistrict,
                                 onDistrictChanged = viewModel::updateDistrict,
-                                onStateChanged = viewModel::updateState,
+                                onStateRegionChanged = viewModel::updateStateRegion,
                                 onClaimChanged = viewModel::updateClaim,
                                 onRealityChanged = viewModel::updateGroundReality,
                                 onToneChanged = viewModel::updateTone,
@@ -209,7 +295,8 @@ fun GramAwazApp(
 
                         VerticalDivider(
                             modifier = Modifier.fillMaxHeight(),
-                            color = Zinc800
+                            color = BorderSubtle,
+                            thickness = 1.dp
                         )
 
                         // Right Pane: Multi-Platform Social Deck
@@ -240,13 +327,13 @@ fun GramAwazApp(
                         }
                     }
                 } else {
-                    // Mobile View with Modern Segmented Control / Pill Switcher
-                    // bg-zinc-900 border border-zinc-800 rounded-xl p-1 flex gap-1
+                    // Mobile View with Modern Newsroom Segmented Control Switcher
                     Column(modifier = Modifier.fillMaxSize()) {
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = Zinc900,
-                            border = BorderStroke(1.dp, Zinc800),
+                            color = CardBackground,
+                            border = BorderStroke(1.dp, BorderSubtle),
+                            shadowElevation = 2.dp,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 6.dp)
@@ -263,7 +350,7 @@ fun GramAwazApp(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(if (mobileSelectedTab == 0) SafetyOrange else Color.Transparent)
+                                        .background(if (mobileSelectedTab == 0) PrimaryNavy else Color.Transparent)
                                         .clickable { mobileSelectedTab = 0 }
                                         .padding(vertical = 10.dp)
                                         .testTag("mobile_tab_form"),
@@ -277,13 +364,13 @@ fun GramAwazApp(
                                             imageVector = Icons.Default.Description,
                                             contentDescription = null,
                                             modifier = Modifier.size(16.dp),
-                                            tint = if (mobileSelectedTab == 0) Color.White else Zinc400
+                                            tint = if (mobileSelectedTab == 0) AccentCyan else SecondaryText
                                         )
                                         Text(
-                                            text = "1. Ground Form",
+                                            text = AppStrings.tabGroundForm(activeLanguage),
                                             fontWeight = if (mobileSelectedTab == 0) FontWeight.Bold else FontWeight.Medium,
-                                            fontSize = 13.sp,
-                                            color = if (mobileSelectedTab == 0) Color.White else Zinc400
+                                            fontSize = 12.sp,
+                                            color = if (mobileSelectedTab == 0) Color.White else SecondaryText
                                         )
                                     }
                                 }
@@ -293,7 +380,7 @@ fun GramAwazApp(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(if (mobileSelectedTab == 1) SafetyOrange else Color.Transparent)
+                                        .background(if (mobileSelectedTab == 1) PrimaryNavy else Color.Transparent)
                                         .clickable { mobileSelectedTab = 1 }
                                         .padding(vertical = 10.dp)
                                         .testTag("mobile_tab_social"),
@@ -307,13 +394,13 @@ fun GramAwazApp(
                                             imageVector = Icons.Default.Share,
                                             contentDescription = null,
                                             modifier = Modifier.size(16.dp),
-                                            tint = if (mobileSelectedTab == 1) Color.White else Zinc400
+                                            tint = if (mobileSelectedTab == 1) AccentCyan else SecondaryText
                                         )
                                         Text(
-                                            text = "2. Social Deck",
+                                            text = AppStrings.tabSocialDeck(activeLanguage),
                                             fontWeight = if (mobileSelectedTab == 1) FontWeight.Bold else FontWeight.Medium,
-                                            fontSize = 13.sp,
-                                            color = if (mobileSelectedTab == 1) Color.White else Zinc400
+                                            fontSize = 12.sp,
+                                            color = if (mobileSelectedTab == 1) Color.White else SecondaryText
                                         )
                                     }
                                 }
@@ -326,11 +413,13 @@ fun GramAwazApp(
                                     formState = formState,
                                     generationState = generationState,
                                     searchGroundingState = searchGroundingState,
+                                    activeLanguage = activeLanguage,
+                                    onScopeChanged = viewModel::updateScope,
                                     onThemeChanged = viewModel::updateTheme,
-                                    onVillageChanged = viewModel::updateVillage,
-                                    onTehsilChanged = viewModel::updateTehsil,
+                                    onLocalUnitChanged = viewModel::updateLocalUnit,
+                                    onSubDistrictChanged = viewModel::updateSubDistrict,
                                     onDistrictChanged = viewModel::updateDistrict,
-                                    onStateChanged = viewModel::updateState,
+                                    onStateRegionChanged = viewModel::updateStateRegion,
                                     onClaimChanged = viewModel::updateClaim,
                                     onRealityChanged = viewModel::updateGroundReality,
                                     onToneChanged = viewModel::updateTone,
@@ -386,13 +475,14 @@ fun GramAwazApp(
         // Visual Quote Card Modal Dialog
         if (showVisualCardDialog) {
             VisualQuoteCardDialog(
-                village = formState.village,
+                village = formState.localUnit,
                 district = formState.district,
                 claim = formState.claim,
                 reality = formState.groundReality,
                 proofBitmap = formState.photoBitmap,
                 captionText = editableDraftText,
-                eventBadge = formState.eventDetails.getFormattedBadge(),
+                eventBadge = formState.eventDetails.getFormattedBadge(activeLanguage),
+                mode = activeLanguage,
                 onDismiss = { showVisualCardDialog = false }
             )
         }
@@ -401,6 +491,7 @@ fun GramAwazApp(
         if (showHistoryDialog) {
             SavedReportsDialog(
                 reports = savedReports,
+                mode = activeLanguage,
                 onSelectReport = { report ->
                     viewModel.loadSavedReport(report)
                     mobileSelectedTab = 1

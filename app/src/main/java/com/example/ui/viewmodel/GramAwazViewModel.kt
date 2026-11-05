@@ -15,6 +15,7 @@ import com.example.data.model.CampaignTheme
 import com.example.data.model.EventDetails
 import com.example.data.model.EventType
 import com.example.data.model.GeneratedPostBundle
+import com.example.data.model.IssueScope
 import com.example.data.model.LanguageMode
 import com.example.data.model.ReportTone
 import com.example.data.model.SearchCitation
@@ -31,7 +32,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-private const val TAG = "GramAwazViewModel"
+private const val TAG = "PostCraftViewModel"
 
 sealed interface GenerationUiState {
     data object Idle : GenerationUiState
@@ -48,18 +49,30 @@ sealed interface SearchGroundingUiState {
 }
 
 data class ReportFormState(
-    val theme: CampaignTheme = CampaignTheme.GROUND_REALITY,
-    val village: String = "Chhamrachh / छमरछ",
-    val tehsil: String = "Sarai / सरई",
-    val district: String = "Singrauli / सिंगरौली",
-    val state: String = "Madhya Pradesh / मध्य प्रदेश",
-    val claim: String = "100% tap water connection under Jal Jeevan Mission, potable water supplied to all households",
-    val groundReality: String = "Nal sukhe hain, paani nahi aa raha, pipeline tooti hai, gaon wale handpump ke liye 2 ghante line lagate hain",
+    val theme: CampaignTheme = CampaignTheme.URBAN_CIVIC,
+    val scope: IssueScope = IssueScope.CITY,
+    val localUnit: String = "वार्ड नं. 24",
+    val subDistrict: String = "इंदौर नगर निगम",
+    val district: String = "इंदौर",
+    val stateRegion: String = "मध्य प्रदेश",
+    val claim: String = "स्मार्ट सिटी प्रोजेक्ट के तहत 100% अंडरग्राउंड ड्रेनेज व सीवरेज निर्माण पूर्ण",
+    val groundReality: String = "हल्की बारिश में भी मुख्य मार्ग पर 2 फीट तक जलभराव, सीवरेज लाइन चोक, घरों में गंदा पानी घुस रहा है",
     val tone: ReportTone = ReportTone.INVESTIGATIVE,
     val photoUri: Uri? = null,
     val photoBitmap: Bitmap? = null,
-    val eventDetails: EventDetails = EventDetails()
-)
+    val eventDetails: EventDetails = EventDetails(
+        eventType = EventType.JAN_SUNWAI,
+        title = "नगर निगम जनसुनवाई व आयुक्त जन-संवाद",
+        date = "आगामी मंगलवार 11:00 AM",
+        venue = "नगर निगम मुख्यालय, इंदौर",
+        isUpcoming = true
+    )
+) {
+    // Compatibility helpers
+    val village: String get() = localUnit
+    val tehsil: String get() = subDistrict
+    val state: String get() = stateRegion
+}
 
 class GramAwazViewModel(
     private val aiRepository: FirebaseAiRepository = FirebaseAiRepository(),
@@ -106,21 +119,30 @@ class GramAwazViewModel(
         _formState.value = _formState.value.copy(theme = theme)
     }
 
-    fun updateVillage(village: String) {
-        _formState.value = _formState.value.copy(village = village)
+    fun updateScope(scope: IssueScope) {
+        _formState.value = _formState.value.copy(scope = scope)
     }
 
-    fun updateTehsil(tehsil: String) {
-        _formState.value = _formState.value.copy(tehsil = tehsil)
+    fun updateLocalUnit(unit: String) {
+        _formState.value = _formState.value.copy(localUnit = unit)
+    }
+
+    fun updateSubDistrict(sub: String) {
+        _formState.value = _formState.value.copy(subDistrict = sub)
     }
 
     fun updateDistrict(district: String) {
         _formState.value = _formState.value.copy(district = district)
     }
 
-    fun updateState(state: String) {
-        _formState.value = _formState.value.copy(state = state)
+    fun updateStateRegion(state: String) {
+        _formState.value = _formState.value.copy(stateRegion = state)
     }
+
+    // Compatibility aliases
+    fun updateVillage(v: String) = updateLocalUnit(v)
+    fun updateTehsil(t: String) = updateSubDistrict(t)
+    fun updateState(s: String) = updateStateRegion(s)
 
     fun updateClaim(claim: String) {
         _formState.value = _formState.value.copy(claim = claim)
@@ -193,9 +215,9 @@ class GramAwazViewModel(
 
     fun verifyOfficialSchemeViaSearch() {
         val form = _formState.value
-        val loc = "${form.district}, ${form.state}"
+        val loc = "${form.district}, ${form.stateRegion}"
         viewModelScope.launch {
-            _searchGroundingState.value = SearchGroundingUiState.Loading("Searching official portal & guidelines for ${form.claim.take(30)}...")
+            _searchGroundingState.value = SearchGroundingUiState.Loading("Searching official guidelines for ${form.claim.take(30)}...")
             val result = aiRepository.fetchOfficialSchemeSearchGrounding(
                 schemeOrClaim = form.claim,
                 location = loc
@@ -209,62 +231,94 @@ class GramAwazViewModel(
         }
     }
 
-    fun loadPreset(presetIndex: Int) {
+    fun loadPreset(presetIndex: Int, mode: LanguageMode = _activeLanguage.value) {
+        val isHindi = mode == LanguageMode.HINDI
         when (presetIndex) {
-            0 -> { // Jal Jeevan Mission
+            0 -> { // Urban Civic (Indore Ward 24 - Waterlogging & Drainage)
                 _formState.value = _formState.value.copy(
-                    theme = CampaignTheme.GROUND_REALITY,
-                    village = "Chhamrachh / छमरछ",
-                    tehsil = "Sarai / सरई",
-                    district = "Singrauli / सिंगरौली",
-                    state = "Madhya Pradesh / मध्य प्रदेश",
-                    claim = "100% tap water connection under Jal Jeevan Mission (Har Ghar Jal Certified)",
-                    groundReality = "Nal bilkul sukhe hain, paani nahi aa raha, pipeline tooti hai, log subah 4 baje se handpump par line lagate hain",
+                    theme = CampaignTheme.URBAN_CIVIC,
+                    scope = IssueScope.CITY,
+                    localUnit = if (isHindi) "वार्ड नं. 24" else "Ward 24",
+                    subDistrict = if (isHindi) "इंदौर नगर निगम" else "Indore Municipal Corporation",
+                    district = if (isHindi) "इंदौर" else "Indore",
+                    stateRegion = if (isHindi) "मध्य प्रदेश" else "Madhya Pradesh",
+                    claim = if (isHindi) "स्मार्ट सिटी प्रोजेक्ट के तहत 100% अंडरग्राउंड ड्रेनेज व सीवरेज निर्माण पूर्ण"
+                            else "100% smart underground drainage and flood prevention system completed",
+                    groundReality = if (isHindi) "हल्की बारिश में भी मुख्य मार्ग पर 2 फीट तक जलभराव, सीवरेज लाइन चोक, घरों में गंदा पानी घुस रहा है"
+                                   else "Just 30 minutes of rain leads to 2-foot waterlogging, choked drains overflow into residential houses",
                     tone = ReportTone.INVESTIGATIVE,
                     eventDetails = EventDetails(
                         eventType = EventType.JAN_SUNWAI,
-                        title = "कलेक्टर जनसुनवाई (District Public Hearing)",
-                        date = "आगामी मंगलवार 11:00 AM",
-                        venue = "ज़िला कलेक्ट्रेट सभागार, बैढ़न (सिंगरौली)",
+                        title = if (isHindi) "नगर निगम जनसुनवाई व आयुक्त जन-संवाद" else "Municipal Commissioner Public Hearing",
+                        date = if (isHindi) "आगामी मंगलवार 11:00 AM" else "Upcoming Tuesday 11:00 AM",
+                        venue = if (isHindi) "नगर निगम मुख्यालय, इंदौर" else "Municipal HQ Auditorium, Indore",
                         isUpcoming = true
                     )
                 )
             }
-            1 -> { // PMGSY Road
+            1 -> { // Rural & Agriculture (Jal Jeevan Mission)
                 _formState.value = _formState.value.copy(
-                    theme = CampaignTheme.RURAL_DEVELOPMENT,
-                    village = "Bargawan / बरगवां",
-                    tehsil = "Deosar / देवसर",
-                    district = "Singrauli / सिंगरौली",
-                    state = "Madhya Pradesh / मध्य प्रदेश",
-                    claim = "All-weather pucca road constructed under PMGSY with 5-year maintenance guarantee",
-                    groundReality = "Pehli hi baarish me sadak beh gayi, bade-bade gaddhe ho gaye hain, ambulance gaon me nahi aa sakti",
+                    theme = CampaignTheme.RURAL_AGRICULTURE,
+                    scope = IssueScope.VILLAGE,
+                    localUnit = if (isHindi) "छमरछ" else "Chhamrachh",
+                    subDistrict = if (isHindi) "सरई" else "Sarai",
+                    district = if (isHindi) "सिंगरौली" else "Singrauli",
+                    stateRegion = if (isHindi) "मध्य प्रदेश" else "Madhya Pradesh",
+                    claim = if (isHindi) "जल जीवन मिशन के तहत हर घर नल से जल कनेक्शन पूर्ण (हर घर जल प्रमाणित)"
+                            else "100% functional tap water connection delivered under Jal Jeevan Mission",
+                    groundReality = if (isHindi) "नल पूरी तरह सूखे हैं, पानी नहीं आ रहा, पाइपलाइन टूटी है, लोग हैंडपंप पर 2 घंटे लाइन लगाते हैं"
+                                   else "Taps are dry, distribution pipeline broken, villagers wait 2 hours in line at handpumps",
+                    tone = ReportTone.INVESTIGATIVE,
+                    eventDetails = EventDetails(
+                        eventType = EventType.JAN_SUNWAI,
+                        title = if (isHindi) "कलेक्टर जनसुनवाई" else "District Collector Public Hearing",
+                        date = if (isHindi) "आगामी मंगलवार 11:00 AM" else "Upcoming Tuesday 11:00 AM",
+                        venue = if (isHindi) "ज़िला कलेक्ट्रेट सभागार, बैढ़न" else "District Collectorate Auditorium, Waidhan",
+                        isUpcoming = true
+                    )
+                )
+            }
+            2 -> { // Governance & Policy (Bargawan Road / Quality Audit)
+                _formState.value = _formState.value.copy(
+                    theme = CampaignTheme.GOVERNANCE_POLICY,
+                    scope = IssueScope.VILLAGE,
+                    localUnit = if (isHindi) "बरगवां" else "Bargawan",
+                    subDistrict = if (isHindi) "देवसर" else "Deosar",
+                    district = if (isHindi) "सिंगरौली" else "Singrauli",
+                    stateRegion = if (isHindi) "मध्य प्रदेश" else "Madhya Pradesh",
+                    claim = if (isHindi) "प्रधानमंत्री ग्राम सड़क योजना के तहत पक्की डामर सड़क निर्माण एवं 5 वर्ष रखरखाव"
+                            else "All-weather pucca road constructed under PMGSY with 5-year maintenance guarantee",
+                    groundReality = if (isHindi) "पहली ही बारिश में सड़क बह गई, गहरे गड्ढे बन गए हैं, गांव में एम्बुलेंस नहीं आ सकती"
+                                   else "Road washed away in first rain, deep dangerous potholes, ambulances cannot enter the village",
                     tone = ReportTone.CONSTRUCTIVE,
                     eventDetails = EventDetails(
                         eventType = EventType.GRAM_SABHA,
-                        title = "विशेष ग्राम सभा बैठक",
-                        date = "15 तारीख, सुबह 10:00 बजे",
-                        venue = "पंचायत भवन, बरगवां",
+                        title = if (isHindi) "विशेष ग्राम सभा बैठक" else "Special Gram Sabha Social Audit",
+                        date = if (isHindi) "15 तारीख, सुबह 10:00 बजे" else "15th of month, 10:00 AM",
+                        venue = if (isHindi) "पंचायत भवन, बरगवां" else "Panchayat Bhavan, Bargawan",
                         isUpcoming = true
                     )
                 )
             }
-            2 -> { // Primary School / Anganwadi
+            3 -> { // Education & Healthcare (District Hospital)
                 _formState.value = _formState.value.copy(
-                    theme = CampaignTheme.EDUCATION_YOUTH,
-                    village = "Katai / कटाई",
-                    tehsil = "Sarai / सरई",
-                    district = "Singrauli / सिंगरौली",
-                    state = "Madhya Pradesh / मध्य प्रदेश",
-                    claim = "Model primary school equipped with smart classrooms, functional toilets, and nutritious mid-day meals",
-                    groundReality = "School ki chhat tapak rahi hai, shauchalay par tala laga hai, 1 teacher par 80 bachhe hain",
-                    tone = ReportTone.STORYTELLING,
+                    theme = CampaignTheme.EDUCATION_HEALTHCARE,
+                    scope = IssueScope.DISTRICT,
+                    localUnit = if (isHindi) "ज़िला सिविल अस्पताल" else "District Civil Hospital",
+                    subDistrict = if (isHindi) "बैढ़न" else "Waidhan",
+                    district = if (isHindi) "सिंगरौली" else "Singrauli",
+                    stateRegion = if (isHindi) "मध्य प्रदेश" else "Madhya Pradesh",
+                    claim = if (isHindi) "200 बिस्तरों वाला सर्वसुविधायुक्त अस्पताल, निःशुल्क 24 घंटे दवाइयां व सोनोग्राफी उपलब्ध"
+                            else "200-bed multi-specialty facility with free round-the-clock medicines and diagnostic services",
+                    groundReality = if (isHindi) "सोनोग्राफी मशीन 6 माह से खराब, मरीजों को निजी केंद्रों पर भेजा जा रहा है, जीवनरक्षक दवाइयां नदारद"
+                                   else "Sonography machine broken for 6 months, patients forced to costly private labs, essential medicines out of stock",
+                    tone = ReportTone.INVESTIGATIVE,
                     eventDetails = EventDetails(
-                        eventType = EventType.OFFICIAL_INSPECTION,
-                        title = "जिला शिक्षा अधिकारी निरीक्षण",
-                        date = "गत 2 दिन पूर्व",
-                        venue = "शासकीय प्राथमिक विद्यालय, कटाई",
-                        isUpcoming = false
+                        eventType = EventType.CITIZEN_PRESS_CONFERENCE,
+                        title = if (isHindi) "नागरिक स्वास्थ्य अधिकार प्रेस वार्ता" else "Citizen Healthcare Rights Press Briefing",
+                        date = if (isHindi) "शुक्रवार दोपहर 1:00 बजे" else "Friday 1:00 PM",
+                        venue = if (isHindi) "प्रेस क्लब सभागार, सिंगरौली" else "Press Club Auditorium, Singrauli",
+                        isUpcoming = true
                     )
                 )
             }
@@ -274,22 +328,23 @@ class GramAwazViewModel(
     fun generatePosts() {
         val currentForm = _formState.value
         if (currentForm.claim.isBlank() || currentForm.groundReality.isBlank()) {
-            _generationState.value = GenerationUiState.Error("Please enter both the Government Claim and Ground Reality.")
+            _generationState.value = GenerationUiState.Error("Please enter both the Official Promise/Claim and Ground Reality.")
             return
         }
 
         viewModelScope.launch {
-            _generationState.value = GenerationUiState.Loading("Gemini AI is analyzing ground data, event info, and generating 4-platform posts...")
+            _generationState.value = GenerationUiState.Loading("PostCraft AI is analyzing ground data and generating multi-platform posts...")
 
             val groundedFacts = (_searchGroundingState.value as? SearchGroundingUiState.Success)?.factualSummary
             val searchCitations = (_searchGroundingState.value as? SearchGroundingUiState.Success)?.citations ?: emptyList()
 
             val aiResult = aiRepository.generateSocialPosts(
                 theme = currentForm.theme,
-                village = currentForm.village,
-                tehsil = currentForm.tehsil,
+                scope = currentForm.scope,
+                localUnit = currentForm.localUnit,
+                subDistrict = currentForm.subDistrict,
                 district = currentForm.district,
-                state = currentForm.state,
+                stateRegion = currentForm.stateRegion,
                 claim = currentForm.claim,
                 groundReality = currentForm.groundReality,
                 tone = currentForm.tone,
@@ -302,10 +357,11 @@ class GramAwazViewModel(
                 Log.w(TAG, "Gemini failed, using offline template generator fallback", it)
                 TemplatePostGenerator.generateOfflineBundle(
                     theme = currentForm.theme,
-                    village = currentForm.village,
-                    tehsil = currentForm.tehsil,
+                    scope = currentForm.scope,
+                    localUnit = currentForm.localUnit,
+                    subDistrict = currentForm.subDistrict,
                     district = currentForm.district,
-                    state = currentForm.state,
+                    stateRegion = currentForm.stateRegion,
                     claim = currentForm.claim,
                     reality = currentForm.groundReality,
                     tone = currentForm.tone,
@@ -334,9 +390,23 @@ class GramAwazViewModel(
     }
 
     fun selectLanguage(language: LanguageMode) {
+        val previous = _activeLanguage.value
         _activeLanguage.value = language
         _currentBundle.value?.let { bundle ->
             updateDraftForSelection(bundle, _activePlatform.value, language)
+        }
+        if (previous != language) {
+            val form = _formState.value
+            // If currently on one of the presets, switch its text to match the new language
+            if (form.localUnit == "वार्ड नं. 24" || form.localUnit == "Ward 24") {
+                loadPreset(0, language)
+            } else if (form.localUnit == "छमरछ" || form.localUnit == "Chhamrachh") {
+                loadPreset(1, language)
+            } else if (form.localUnit == "बरगवां" || form.localUnit == "Bargawan") {
+                loadPreset(2, language)
+            } else if (form.localUnit == "ज़िला सिविल अस्पताल" || form.localUnit == "District Civil Hospital") {
+                loadPreset(3, language)
+            }
         }
     }
 
@@ -348,17 +418,17 @@ class GramAwazViewModel(
                 if (_activeLanguage.value == LanguageMode.HINDI) bundle.copy(twitterHindi = newText)
                 else bundle.copy(twitterEnglish = newText)
             }
-            SocialPlatform.INSTAGRAM -> {
-                if (_activeLanguage.value == LanguageMode.HINDI) bundle.copy(instagramHindi = newText)
-                else bundle.copy(instagramEnglish = newText)
+            SocialPlatform.INSTAGRAM_FB -> {
+                if (_activeLanguage.value == LanguageMode.HINDI) bundle.copy(instagramFbHindi = newText)
+                else bundle.copy(instagramFbEnglish = newText)
+            }
+            SocialPlatform.PRESS_RELEASE -> {
+                if (_activeLanguage.value == LanguageMode.HINDI) bundle.copy(pressReleaseHindi = newText)
+                else bundle.copy(pressReleaseEnglish = newText)
             }
             SocialPlatform.LINKEDIN -> {
                 if (_activeLanguage.value == LanguageMode.HINDI) bundle.copy(linkedInHindi = newText)
                 else bundle.copy(linkedInEnglish = newText)
-            }
-            SocialPlatform.FACEBOOK -> {
-                if (_activeLanguage.value == LanguageMode.HINDI) bundle.copy(facebookHindi = newText)
-                else bundle.copy(facebookEnglish = newText)
             }
         }
         _currentBundle.value = updated
@@ -389,10 +459,11 @@ class GramAwazViewModel(
                 val report = CampaignReport(
                     userId = user.uid,
                     theme = form.theme.name,
-                    village = form.village,
-                    tehsil = form.tehsil,
+                    scope = form.scope.name,
+                    localUnit = form.localUnit,
+                    subDistrict = form.subDistrict,
                     district = form.district,
-                    state = form.state,
+                    stateRegion = form.stateRegion,
                     claim = form.claim,
                     groundReality = form.groundReality,
                     tone = form.tone.name,
@@ -406,12 +477,12 @@ class GramAwazViewModel(
                     isUpcomingEvent = form.eventDetails.isUpcoming,
                     twitterHindi = bundle.twitterHindi,
                     twitterEnglish = bundle.twitterEnglish,
-                    instagramHindi = bundle.instagramHindi,
-                    instagramEnglish = bundle.instagramEnglish,
+                    instagramFbHindi = bundle.instagramFbHindi,
+                    instagramFbEnglish = bundle.instagramFbEnglish,
+                    pressReleaseHindi = bundle.pressReleaseHindi,
+                    pressReleaseEnglish = bundle.pressReleaseEnglish,
                     linkedInHindi = bundle.linkedInHindi,
-                    linkedInEnglish = bundle.linkedInEnglish,
-                    facebookHindi = bundle.facebookHindi,
-                    facebookEnglish = bundle.facebookEnglish
+                    linkedInEnglish = bundle.linkedInEnglish
                 )
 
                 firestoreRepository.saveReport(report)
@@ -444,12 +515,14 @@ class GramAwazViewModel(
             venue = report.eventVenue,
             isUpcoming = report.isUpcomingEvent
         )
+        val loadedScope = IssueScope.entries.find { it.name == report.scope } ?: IssueScope.VILLAGE
         _formState.value = _formState.value.copy(
-            theme = CampaignTheme.entries.find { it.name == report.theme } ?: CampaignTheme.GROUND_REALITY,
-            village = report.village,
-            tehsil = report.tehsil,
+            theme = CampaignTheme.entries.find { it.name == report.theme } ?: CampaignTheme.URBAN_CIVIC,
+            scope = loadedScope,
+            localUnit = report.localUnit,
+            subDistrict = report.subDistrict,
             district = report.district,
-            state = report.state,
+            stateRegion = report.stateRegion,
             claim = report.claim,
             groundReality = report.groundReality,
             tone = ReportTone.entries.find { it.name == report.tone } ?: ReportTone.INVESTIGATIVE,
